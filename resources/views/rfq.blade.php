@@ -128,7 +128,7 @@
             </div>
 
             {{-- Form --}}
-            <form id="rfq-form" method="POST" action="{{ route('rfq.submit') }}" class="px-8 py-6 space-y-5" novalidate>
+            <form id="rfq-form" method="POST" action="{{ route('rfq.submit') }}" enctype="multipart/form-data" class="px-8 py-6 space-y-5" novalidate>
                 @csrf
 
                 {{-- Personal info --}}
@@ -182,6 +182,28 @@
                     <textarea id="specifications" name="specifications" rows="4" class="input-field @error('specifications') border-red-400 @enderror"
                               placeholder="Size, colour, power, certifications, brand preferences, etc." required>{{ old('specifications') }}</textarea>
                     @error('specifications') <p class="error-msg">{{ $message }}</p> @enderror
+                </div>
+
+                <div>
+                    <label class="label">Product Image <span class="badge badge-opt">Optional</span></label>
+                    <div id="dropzone" class="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center cursor-pointer hover:bg-gray-50 transition-colors @error('image') border-red-400 @enderror">
+                        <input type="file" id="image" name="image" class="hidden" accept="image/*">
+                        
+                        <div id="preview-container" class="hidden">
+                            <img id="image-preview" src="" class="max-h-32 mx-auto rounded-lg mb-2 shadow-sm border border-gray-200 object-cover">
+                            <p id="file-name" class="text-sm text-gray-700 font-medium truncate max-w-xs mx-auto"></p>
+                            <button type="button" id="remove-image" class="text-xs font-semibold text-red-500 hover:text-red-700 mt-2 bg-red-50 px-2 py-1 rounded">Remove Image</button>
+                        </div>
+                        
+                        <div id="upload-placeholder">
+                            <svg class="mx-auto h-10 w-10 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                            <p class="text-sm text-gray-600">Drag and drop an image, or <span class="text-blue-600 font-semibold">browse</span></p>
+                            <p class="text-xs text-gray-400 mt-1">Max size: 4MB. Formats: JPG, PNG, GIF, WEBP</p>
+                        </div>
+                    </div>
+                    @error('image') <p class="error-msg">{{ $message }}</p> @enderror
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -255,6 +277,73 @@
             btn.disabled = true;
             label.innerHTML = '<span class="spinner"></span> Submitting...';
         });
+
+        // Image drag & drop logic
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('image');
+        const previewContainer = document.getElementById('preview-container');
+        const uploadPlaceholder = document.getElementById('upload-placeholder');
+        const imagePreview = document.getElementById('image-preview');
+        const fileNameDisplay = document.getElementById('file-name');
+        const removeImageBtn = document.getElementById('remove-image');
+
+        dropzone.addEventListener('click', (e) => {
+            if (e.target !== removeImageBtn) {
+                fileInput.click();
+            }
+        });
+
+        ['dragover', 'dragenter'].forEach(evt => {
+            dropzone.addEventListener(evt, e => {
+                e.preventDefault();
+                dropzone.classList.add('bg-blue-50', 'border-blue-400');
+            });
+        });
+
+        ['dragleave', 'dragend', 'drop'].forEach(evt => {
+            dropzone.addEventListener(evt, e => {
+                e.preventDefault();
+                dropzone.classList.remove('bg-blue-50', 'border-blue-400');
+            });
+        });
+
+        dropzone.addEventListener('drop', e => {
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                handleFileSelection();
+            }
+        });
+
+        fileInput.addEventListener('change', handleFileSelection);
+
+        removeImageBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            fileInput.value = '';
+            previewContainer.classList.add('hidden');
+            uploadPlaceholder.classList.remove('hidden');
+        });
+
+        function handleFileSelection() {
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                
+                // Validate size (4MB)
+                if (file.size > 4 * 1024 * 1024) {
+                    alert('File is too large. Maximum size is 4MB.');
+                    fileInput.value = '';
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    fileNameDisplay.textContent = file.name;
+                    uploadPlaceholder.classList.add('hidden');
+                    previewContainer.classList.remove('hidden');
+                }
+                reader.readAsDataURL(file);
+            }
+        }
     </script>
 </body>
 </html>

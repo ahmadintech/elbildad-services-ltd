@@ -57,7 +57,7 @@
         <div class="text-center max-w-sm">
            <img src="/images/logo/elbildad-logo.png" alt="Logo" class="mx-auto mb-6 h-20 w-auto" />
            <h2 class="text-2xl font-bold text-white mb-4">Join Elbildad Services</h2>
-           <p class="text-gray-400">The most reliable bridge between Chinese manufacturers and Nigerian buyers.</p>
+           <p class="text-gray-400">Your trusted and reliable sourcing agency</p>
         </div>
       </div>
     </div>

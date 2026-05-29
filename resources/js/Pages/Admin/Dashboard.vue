@@ -1,25 +1,79 @@
 <template>
   <AdminLayout>
     <Head title="Dashboard" />
-    <div class="grid grid-cols-12 gap-4 md:gap-6">
-      <div class="col-span-12 space-y-6 xl:col-span-7">
-        <EcommerceMetrics />
-        <MonthlyTarget />
-      </div>
-      <div class="col-span-12 xl:col-span-5">
-        <MonthlySale />
+    <div class="space-y-6">
+      <!-- KPI Metrics -->
+      <DashboardMetrics :stats="stats" />
+
+      <!-- Quick Actions & Health/Categories -->
+      <div class="grid grid-cols-12 gap-6">
+        <div class="col-span-12 lg:col-span-5">
+          <QuickActions />
+        </div>
+        <div class="col-span-12 lg:col-span-7">
+          <SystemHealthCard :system-health="systemHealth" />
+        </div>
       </div>
 
-      <div class="col-span-12">
-        <StatisticsChart />
-      </div>
+      <!-- Main Grid Layout -->
+      <div class="grid grid-cols-12 gap-6">
+        <!-- RFQ Trends -->
+        <div class="col-span-12 lg:col-span-7">
+          <TrendChart 
+            title="RFQ Trend (Last 12 Months)"
+            :labels="monthlyTrend.labels"
+            :data="monthlyTrend.data"
+            :color="monthlyTrend.color"
+          />
+        </div>
 
-      <div class="col-span-12 xl:col-span-5">
-        <CustomerDemographic />
-      </div>
+        <!-- Category Breakdown -->
+        <div class="col-span-12 lg:col-span-5">
+          <CategoryBreakdown :categories="categoryBreakdown" />
+        </div>
 
-      <div class="col-span-12 xl:col-span-7">
-        <RecentOrders />
+        <!-- RFQ Status Breakdown -->
+        <div class="col-span-12 lg:col-span-5">
+          <RFQStatusChart 
+            title="RFQ Status Breakdown"
+            :labels="rfqStatusData.labels"
+            :data="rfqStatusData.data"
+            :colors="rfqStatusData.colors"
+          />
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="col-span-12 lg:col-span-7">
+          <SummaryStats
+            title="RFQ Summary"
+            :stats="summaryStats"
+          />
+        </div>
+
+        <!-- Revenue Trends -->
+        <div class="col-span-12">
+          <TrendChart 
+            title="Revenue Trend (Last 12 Months)"
+            :labels="monthlyRevenue.labels"
+            :data="monthlyRevenue.data"
+            :color="monthlyRevenue.color"
+          />
+        </div>
+
+        <!-- Recent RFQs -->
+        <div class="col-span-12 lg:col-span-7">
+          <RecentRfqs :rfqs="recent_rfqs" />
+        </div>
+
+        <!-- Financial Overview -->
+        <div class="col-span-12 lg:col-span-5">
+          <FinancialOverview :stats="totalStats" :invoices="recent_invoices" />
+        </div>
+
+        <!-- Team Performance -->
+        <div class="col-span-12">
+          <TeamPerformance :agents="topAgents" />
+        </div>
       </div>
     </div>
   </AdminLayout>
@@ -27,16 +81,31 @@
 
 <script setup>
 import AdminLayout from '@/components/layout/AdminLayout.vue'
-import EcommerceMetrics from '@/components/ecommerce/EcommerceMetrics.vue'
-import MonthlyTarget from '@/components/ecommerce/MonthlySale.vue'
-import MonthlySale from '@/components/ecommerce/MonthlyTarget.vue'
-import CustomerDemographic from '@/components/ecommerce/CustomerDemographic.vue'
-import StatisticsChart from '@/components/ecommerce/StatisticsChart.vue'
-import RecentOrders from '@/components/ecommerce/RecentOrders.vue'
+import DashboardMetrics from '@/components/dashboard/DashboardMetrics.vue'
+import RFQStatusChart from '@/components/dashboard/RFQStatusChart.vue'
+import TrendChart from '@/components/dashboard/TrendChart.vue'
+import SummaryStats from '@/components/dashboard/SummaryStats.vue'
+import SystemHealthCard from '@/components/dashboard/SystemHealthCard.vue'
+import CategoryBreakdown from '@/components/dashboard/CategoryBreakdown.vue'
+import QuickActions from '@/components/dashboard/QuickActions.vue'
+import RecentRfqs from '@/components/dashboard/RecentRfqs.vue'
+import FinancialOverview from '@/components/dashboard/FinancialOverview.vue'
+import TeamPerformance from '@/components/dashboard/TeamPerformance.vue'
 import { Head } from '@inertiajs/vue3'
 
 defineProps({
   stats: Array,
-  recent_rfqs: Array
+  summaryStats: Array,
+  recent_rfqs: Array,
+  recent_invoices: Array,
+  rfqStatusData: Object,
+  monthlyTrend: Object,
+  monthlyRevenue: Object,
+  topAgents: Array,
+  categoryBreakdown: Array,
+  systemHealth: Object,
+  totalStats: Object
 })
 </script>
+
+

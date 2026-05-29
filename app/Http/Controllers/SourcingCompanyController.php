@@ -34,6 +34,8 @@ class SourcingCompanyController extends Controller
             'name' => 'required|string|max:255',
             'location' => 'nullable|string|max:255',
             'website' => 'nullable|url|max:255',
+            'email' => 'nullable|email|max:255',
+            'phone' => 'nullable|string|max:255',
             'description' => 'nullable|string',
         ]);
 
@@ -51,6 +53,8 @@ class SourcingCompanyController extends Controller
             'name' => 'required|string|max:255',
             'location' => 'nullable|string|max:255',
             'website' => 'nullable|url|max:255',
+            'email' => 'nullable|email|max:255',
+            'phone' => 'nullable|string|max:255',
             'description' => 'nullable|string',
         ]);
 

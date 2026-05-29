@@ -183,7 +183,10 @@ import {
   ListIcon,
   UserGroupIcon,
   BoxCubeIcon,
-  PlugInIcon
+  PlugInIcon,
+  DocsIcon,
+  PageIcon,
+  BarChartIcon
 } from "../../icons";
 import { useSidebar } from "@/composables/useSidebar";
 
@@ -225,6 +228,11 @@ const menuGroups = computed(() => {
           path: "/admin/users",
         },
         {
+          icon: ListIcon,
+          name: "RFQs",
+          path: "/admin/rfqs",
+        },
+        {
           icon: BoxCubeIcon,
           name: "Sourcing Companies",
           path: "/admin/sourcing-companies",
@@ -243,6 +251,39 @@ const menuGroups = computed(() => {
           ],
         },
       ],
+    });
+  }
+
+  if (hasRole(["admin", "owner", "agent", "super_agent"])) {
+    const financeItems = [
+      {
+        icon: DocsIcon,
+        name: "Invoices",
+        path: "/finance/invoices",
+      },
+      {
+        icon: PageIcon,
+        name: "Estimates",
+        path: "/finance/estimates",
+      },
+      {
+        icon: TableIcon,
+        name: "Items",
+        path: "/finance/items",
+      },
+    ];
+
+    if (hasRole(["admin", "owner"])) {
+      financeItems.push({
+        icon: BarChartIcon,
+        name: "Reports",
+        path: "/finance/reports",
+      });
+    }
+
+    groups.push({
+      title: "Finance",
+      items: financeItems,
     });
   }
 

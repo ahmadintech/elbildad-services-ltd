@@ -16,12 +16,22 @@ class Rfq extends AbstractModel
     protected function casts(): array
     {
         return [
-            'quantity' => QuantityEnum::class,
-            'delivery_method' => DeliveryMethodEnum::class,
-            'status' => RfqStatusEnum::class,
-            'ai_suppliers' => 'array',
+            'quantity'         => QuantityEnum::class,
+            'delivery_method'  => DeliveryMethodEnum::class,
+            'status'           => RfqStatusEnum::class,
+            'ai_suppliers'     => 'array',
             'internal_matches' => 'array',
+            'claude_suppliers' => 'array',
+            'qwen_suppliers'   => 'array',
+            'best_supplier'    => 'array',
         ];
+    }
+
+    protected $appends = ['image_url'];
+
+    public function getImageUrlAttribute(): ?string
+    {
+        return $this->image_path ? asset('storage/' . $this->image_path) : null;
     }
 
     public function customer(): BelongsTo

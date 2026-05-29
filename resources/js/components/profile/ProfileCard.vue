@@ -3,8 +3,9 @@
     <div class="p-5 mb-6 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
       <div class="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
         <div class="flex flex-col items-center w-full gap-6 xl:flex-row">
-          <div class="w-20 h-20 overflow-hidden border border-gray-200 rounded-full dark:border-gray-800 bg-brand-50 dark:bg-brand-500/10 flex items-center justify-center">
-            <span class="text-3xl font-bold text-brand-500 dark:text-brand-400">
+          <div class="w-20 h-20 overflow-hidden border border-gray-200 rounded-full dark:border-gray-800 bg-brand-50 dark:bg-brand-500/10 flex items-center justify-center shrink-0">
+            <img v-if="user?.avatar" :src="'/storage/' + user.avatar" alt="Avatar" class="w-full h-full object-cover" />
+            <span v-else class="text-3xl font-bold text-brand-500 dark:text-brand-400">
               {{ user?.name?.charAt(0)?.toUpperCase() }}
             </span>
           </div>
@@ -79,6 +80,12 @@
               <input v-model="form.whatsapp_number" type="text" placeholder="+234..." class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" />
               <div v-if="form.errors.whatsapp_number" class="text-error-500 text-xs mt-1">{{ form.errors.whatsapp_number }}</div>
             </div>
+            <div>
+              <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Passport / Logo</label>
+              <input type="file" @change="e => form.avatar = e.target.files[0]" accept="image/*" class="dark:bg-dark-900 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 dark:file:bg-brand-900/30 dark:file:text-brand-400 cursor-pointer" />
+              <p class="mt-1 text-xs text-gray-500">Max size: 4MB (JPEG, PNG, JPG, GIF)</p>
+              <div v-if="form.errors.avatar" class="text-error-500 text-xs mt-1">{{ form.errors.avatar }}</div>
+            </div>
           </div>
 
           <div class="flex items-center gap-3 px-2 mt-6 lg:justify-end">
@@ -108,17 +115,20 @@ const props = defineProps({
 const isEditModal = ref(false)
 
 const form = useForm({
+  _method: 'patch',
   name: props.user?.name ?? '',
   email: props.user?.email ?? '',
   whatsapp_number: props.user?.whatsapp_number ?? '',
+  avatar: null,
 })
 
 const capitalize = (str) => str ? str.charAt(0).toUpperCase() + str.slice(1) : ''
 
 const saveProfile = () => {
-  form.patch(route('profile.update'), {
+  form.post(route('profile.update'), {
     onSuccess: () => {
       isEditModal.value = false
+      form.avatar = null
     },
     preserveScroll: true
   })

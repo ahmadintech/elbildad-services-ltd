@@ -11,4 +11,5 @@ enum RfqStatusEnum: string
     case SHIPPED = 'shipped';
     case COMPLETED = 'completed';
     case QUEUED = 'queued';
+    case NOT_FOUND = 'not_found';
 }

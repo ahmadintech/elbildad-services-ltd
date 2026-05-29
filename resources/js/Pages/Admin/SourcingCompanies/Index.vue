@@ -113,6 +113,14 @@
             <input v-model="form.website" type="url" class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:text-white" />
           </div>
           <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Email</label>
+            <input v-model="form.email" type="email" class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:text-white" />
+          </div>
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Phone</label>
+            <input v-model="form.phone" type="text" class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:text-white" />
+          </div>
+          <div>
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Description</label>
             <textarea v-model="form.description" rows="3" class="dark:bg-dark-900 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:text-white"></textarea>
           </div>
@@ -175,6 +183,8 @@ const form = useForm({
   name: '',
   location: '',
   website: '',
+  email: '',
+  phone: '',
   description: '',
 })
 
@@ -196,6 +206,8 @@ const editCompany = (company) => {
   form.name = company.name
   form.location = company.location
   form.website = company.website
+  form.email = company.email
+  form.phone = company.phone
   form.description = company.description
   isModalOpen.value = true
 }

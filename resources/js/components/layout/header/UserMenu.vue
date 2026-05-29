@@ -4,8 +4,9 @@
       class="flex items-center text-gray-700 dark:text-gray-400"
       @click.prevent="toggleDropdown"
     >
-      <span class="mr-3 overflow-hidden rounded-full h-11 w-11 bg-brand-50 dark:bg-brand-500/10 flex items-center justify-center">
-        <span class="text-xs font-bold text-brand-500 dark:text-brand-400">{{ userInitials }}</span>
+      <span class="mr-3 overflow-hidden rounded-full h-11 w-11 bg-brand-50 dark:bg-brand-500/10 flex items-center justify-center shrink-0">
+        <img v-if="user?.avatar" :src="'/storage/' + user.avatar" alt="Avatar" class="w-full h-full object-cover" />
+        <span v-else class="text-xs font-bold text-brand-500 dark:text-brand-400">{{ userInitials }}</span>
       </span>
 
       <span class="block mr-1 font-medium text-theme-sm">{{ user.name }}</span>

@@ -29,6 +29,31 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $notifications = [];
+        if ($request->user()) {
+            if ($request->user()->hasRole(['admin', 'owner'])) {
+                $notifications = \Illuminate\Notifications\DatabaseNotification::latest()->limit(5)->get()->map(function ($n) {
+                    return [
+                        'id' => $n->id,
+                        'type' => $n->data['type'] ?? 'System Activity',
+                        'message' => $n->data['message'] ?? 'Activity occurred',
+                        'action_url' => $n->data['action_url'] ?? '#',
+                        'time' => $n->created_at->diffForHumans(),
+                    ];
+                });
+            } else {
+                $notifications = $request->user()->unreadNotifications()->limit(5)->get()->map(function ($n) {
+                    return [
+                        'id' => $n->id,
+                        'type' => $n->data['type'] ?? 'Notification',
+                        'message' => $n->data['message'] ?? 'New notification',
+                        'action_url' => $n->data['action_url'] ?? '#',
+                        'time' => $n->created_at->diffForHumans(),
+                    ];
+                });
+            }
+        }
+
         return [
             ...parent::share($request),
             'auth' => [
@@ -36,10 +61,15 @@ class HandleInertiaRequests extends Middleware
                     $request->user()->toArray(),
                     ['roles' => $request->user()->getRoleNames()->toArray()]
                 ) : null,
+                'notifications' => $notifications,
             ],
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
-                'error' => fn () => $request->session()->get('error'),
+                'error'   => fn () => $request->session()->get('error'),
+            ],
+            'currency' => [
+                'symbol' => env('APP_CURRENCY_SYMBOL', '₦'),
+                'code'   => env('APP_CURRENCY_CODE', 'NGN'),
             ],
         ];
     }

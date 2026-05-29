@@ -62,24 +62,20 @@
         <li v-for="notification in notifications" :key="notification.id" @click="handleItemClick">
           <a
             class="flex gap-3 rounded-lg border-b border-gray-100 p-3 px-4.5 py-3 hover:bg-gray-100 dark:border-gray-800 dark:hover:bg-white/5"
-            href="#"
+            :href="notification.action_url !== '#' ? notification.action_url : '#'"
           >
             <span class="relative block w-full h-10 rounded-full z-1 max-w-10">
-              <img :src="notification.userImage" alt="User" class="overflow-hidden rounded-full" />
-              <span
-                :class="notification.status === 'online' ? 'bg-success-500' : 'bg-error-500'"
-                class="absolute bottom-0 right-0 z-10 h-2.5 w-full max-w-2.5 rounded-full border-[1.5px] border-white dark:border-gray-900"
-              ></span>
+              <div class="flex h-10 w-10 items-center justify-center rounded-full bg-brand-50 text-brand-500 dark:bg-brand-500/10 dark:text-brand-400">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 22C13.1 22 14 21.1 14 20H10C10 21.1 10.9 22 12 22ZM18 16V11C18 7.93 16.36 5.36 13.5 4.68V4C13.5 3.17 12.83 2.5 12 2.5C11.17 2.5 10.5 3.17 10.5 4V4.68C7.63 5.36 6 7.92 6 11V16L4 18V19H20V18L18 16Z" fill="currentColor"/>
+                </svg>
+              </div>
             </span>
 
             <span class="block">
               <span class="mb-1.5 block text-theme-sm text-gray-500 dark:text-gray-400">
                 <span class="font-medium text-gray-800 dark:text-white/90">
-                  {{ notification.userName }}
-                </span>
-                {{ notification.action }}
-                <span class="font-medium text-gray-800 dark:text-white/90">
-                  {{ notification.project }}
+                  {{ notification.message }}
                 </span>
               </span>
 
@@ -90,6 +86,9 @@
               </span>
             </span>
           </a>
+        </li>
+        <li v-if="notifications.length === 0" class="p-4 text-center text-sm text-gray-500 dark:text-gray-400">
+          No new notifications
         </li>
       </ul>
 
@@ -104,96 +103,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
-import { Link } from '@inertiajs/vue3'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { Link, usePage } from '@inertiajs/vue3'
+
+const page = usePage()
+const notifications = computed(() => page.props.auth?.notifications || [])
 
 const dropdownOpen = ref(false)
-const notifying = ref(true)
+const notifying = computed(() => notifications.value.length > 0)
 const dropdownRef = ref(null)
-
-const notifications = ref([
-  {
-    id: 1,
-    userName: 'Terry Franci',
-    userImage: '/images/user/user-02.jpg',
-    action: 'requests permission to change',
-    project: 'Project - Nganter App',
-    type: 'Project',
-    time: '5 min ago',
-    status: 'online',
-  },
-  {
-    id: 2,
-    userName: 'Terry Franci',
-    userImage: '/images/user/user-03.jpg',
-    action: 'requests permission to change',
-    project: 'Project - Nganter App',
-    type: 'Project',
-    time: '5 min ago',
-    status: 'offline',
-  },
-  {
-    id: 3,
-    userName: 'Terry Franci',
-    userImage: '/images/user/user-04.jpg',
-    action: 'requests permission to change',
-    project: 'Project - Nganter App',
-    type: 'Project',
-    time: '5 min ago',
-    status: 'online',
-  },
-  {
-    id: 4,
-    userName: 'Terry Franci',
-    userImage: '/images/user/user-05.jpg',
-    action: 'requests permission to change',
-    project: 'Project - Nganter App',
-    type: 'Project',
-    time: '5 min ago',
-    status: 'online',
-  },
-  {
-    id: 5,
-    userName: 'Terry Franci',
-    userImage: '/images/user/user-06.jpg',
-    action: 'requests permission to change',
-    project: 'Project - Nganter App',
-    type: 'Project',
-    time: '5 min ago',
-    status: 'offline',
-  },
-  {
-    id: 6,
-    userName: 'Terry Franci',
-    userImage: '/images/user/user-07.jpg',
-    action: 'requests permission to change',
-    project: 'Project - Nganter App',
-    type: 'Project',
-    time: '5 min ago',
-    status: 'online',
-  },
-  {
-    id: 7,
-    userName: 'Terry Franci',
-    userImage: '/images/user/user-08.jpg',
-    action: 'requests permission to change',
-    project: 'Project - Nganter App',
-    type: 'Project',
-    time: '5 min ago',
-    status: 'online',
-  },
-  {
-    id: 7,
-    userName: 'Terry Franci',
-    userImage: '/images/user/user-09.jpg',
-    action: 'requests permission to change',
-    project: 'Project - Nganter App',
-    type: 'Project',
-    time: '5 min ago',
-    status: 'online',
-  },
-  // Add more notifications here...
-])
 
 const toggleDropdown = () => {
   dropdownOpen.value = !dropdownOpen.value

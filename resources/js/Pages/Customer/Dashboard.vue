@@ -60,7 +60,7 @@
                 'rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider',
                 getStatusClasses(rfq.status)
               ]">
-                {{ rfq.status }}
+                {{ rfq.status.replace('_', ' ') }}
               </div>
             </div>
 
@@ -104,6 +104,14 @@
                   </span>
                 </div>
               </div>
+            </div>
+
+            <!-- Image (if any) -->
+            <div v-if="rfq.image_url" class="mb-4 mt-2 px-2">
+               <a :href="rfq.image_url" target="_blank" class="inline-flex items-center gap-1.5 text-[11px] font-bold text-brand-500 hover:text-brand-600 uppercase tracking-wider">
+                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                 View Attached Image
+               </a>
             </div>
 
             <!-- Agent Info & Action -->
@@ -158,7 +166,8 @@ const isStepActive = (currentStatus, stepValue) => {
     'sourcing': 2,
     'purchased': 3,
     'shipped': 4,
-    'completed': 5
+    'completed': 5,
+    'not_found': -1
   }
   return statusWeight[currentStatus.toLowerCase()] >= statusWeight[stepValue]
 }
@@ -180,6 +189,7 @@ const getProgressPercentage = (status) => {
   const map = {
     'pending': 0,
     'queued': 0,
+    'not_found': 0,
     'assigned': 20,
     'sourcing': 40,
     'purchased': 60,
@@ -192,6 +202,7 @@ const getProgressPercentage = (status) => {
 const getStatusClasses = (status) => {
   const s = status.toLowerCase()
   if (s === 'completed') return 'bg-green-50 text-green-600 dark:bg-green-500/10 dark:text-green-500'
+  if (s === 'not_found') return 'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-500'
   if (['pending', 'queued', 'assigned'].includes(s)) return 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-500'
   if (['sourcing', 'purchased'].includes(s)) return 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-500'
   return 'bg-purple-50 text-purple-600 dark:bg-purple-500/10 dark:text-purple-500'

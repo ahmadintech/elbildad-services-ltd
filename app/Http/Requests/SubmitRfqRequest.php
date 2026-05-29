@@ -36,6 +36,7 @@ class SubmitRfqRequest extends FormRequest
             'delivery_method' => ['required', Rule::enum(DeliveryMethodEnum::class)],
             'target_price' => ['nullable', 'string', 'max:255'],
             'additional_requirements' => ['nullable', 'string'],
+            'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:4096'],
         ];
     }
 }

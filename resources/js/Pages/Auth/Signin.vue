@@ -41,6 +41,10 @@
                 </button>
               </div>
             </form>
+            <div class="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
+              Don't have an account?
+              <Link href="/signup" class="font-medium text-brand-500 hover:text-brand-600">Sign up</Link>
+            </div>
           </div>
         </div>
       </div>
@@ -48,7 +52,7 @@
         <div class="text-center max-w-sm">
            <img src="/images/logo/elbildad-logo.png" alt="Logo" class="mx-auto mb-6 h-20 w-auto" />
            <h2 class="text-2xl font-bold text-white mb-4">Elbildad Services</h2>
-           <p class="text-gray-400">Premium RFQ Management Platform for China-Nigeria Sourcing.</p>
+           <p class="text-gray-400">Your trusted and reliable sourcing agency</p>
         </div>
       </div>
     </div>

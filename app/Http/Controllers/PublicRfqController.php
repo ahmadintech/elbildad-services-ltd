@@ -14,6 +14,9 @@ use App\Events\RfqQueued;
 use App\Enums\RfqStatusEnum;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\WelcomeUserEmail;
+use App\Mail\RfqReceivedEmail;
 
 class PublicRfqController extends Controller
 {
@@ -21,15 +24,24 @@ class PublicRfqController extends Controller
     {
         $data = $request->validated();
         
+        // If a user is logged in but they are not a customer (e.g. an admin testing the form), 
+        // we should not use their account. We want to find/create the actual customer.
         $user = auth()->user();
+        if ($user && !$user->hasRole('customer')) {
+            $user = null;
+        }
 
         if (!$user) {
-            // Try to find by WhatsApp first
-            $user = User::where('whatsapp_number', $data['whatsapp_number'])->first();
+            // Try to find by WhatsApp first (including soft deleted)
+            $user = User::withTrashed()->where('whatsapp_number', $data['whatsapp_number'])->first();
             
             // If not found by WhatsApp, try by email (if provided)
             if (!$user && !empty($data['email'])) {
-                $user = User::where('email', $data['email'])->first();
+                $user = User::withTrashed()->where('email', $data['email'])->first();
+            }
+
+            if ($user && $user->trashed()) {
+                $user->restore();
             }
 
             if (!$user) {
@@ -41,9 +53,18 @@ class PublicRfqController extends Controller
                     'password' => bcrypt($randomPassword),
                 ]);
                 
-                // $user->assignRole('customer');
+                $user->assignRole('customer');
                 Log::info("WhatsApp Stub: Account created for {$user->whatsapp_number}. Password: {$randomPassword}");
+
+                if ($user->email) {
+                    Mail::to($user->email)->send(new WelcomeUserEmail($user, $randomPassword));
+                }
             }
+        }
+
+        $imagePath = null;
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('rfq_images', 'public');
         }
 
         $rfq = Rfq::create([
@@ -58,56 +79,16 @@ class PublicRfqController extends Controller
             'company_name' => $data['company_name'] ?? null,
             'status' => RfqStatusEnum::PENDING->value,
             'tracking_token' => Str::uuid()->toString(),
+            'image_path' => $imagePath,
         ]);
-
-        // Direct Assignment Logic
-        $this->assignRfq($rfq);
 
         ProcessRfqWithAI::dispatch($rfq);
 
+        if ($user->email) {
+            Mail::to($user->email)->send(new RfqReceivedEmail($rfq));
+        }
+
         return redirect()->route('rfq.track', $rfq->tracking_token)
             ->with('success', 'RFQ submitted successfully! Your tracking token is: ' . $rfq->tracking_token);
-    }
-
-    private function assignRfq(Rfq $rfq): void
-    {
-        $agent = $this->findAgent('agent', $rfq->category_id);
-
-        if (!$agent) {
-            $agent = $this->findAgent('super_agent');
-        }
-
-        if ($agent) {
-            AgentRfqAssignment::create([
-                'rfq_id' => $rfq->id,
-                'agent_id' => $agent->id,
-                'assigned_at' => now(),
-                'is_active' => true,
-            ]);
-
-            $rfq->update([
-                'assigned_agent_id' => $agent->id,
-                'status' => RfqStatusEnum::ASSIGNED->value,
-            ]);
-        } else {
-            $rfq->update(['status' => RfqStatusEnum::QUEUED->value]);
-            event(new RfqQueued($rfq));
-        }
-    }
-
-    private function findAgent(string $role, ?string $categoryId = null): ?User
-    {
-        $query = User::role($role)
-            ->withCount(['rfqAssignments as active_count' => function ($q) {
-                $q->where('is_active', true);
-            }])
-            ->having('active_count', '<', 5)
-            ->orderBy('active_count', 'asc');
-
-        if ($categoryId && $role === 'agent') {
-            $query->whereHas('categories', fn($q) => $q->where('categories.id', $categoryId));
-        }
-
-        return $query->first();
     }
 }
