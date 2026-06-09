@@ -39,4 +39,16 @@ class User extends AbstractAuthenticatable
     {
         return $this->hasMany(Rfq::class, 'customer_id');
     }
+
+    /**
+     * Send the password reset notification.
+     * Force instant delivery by bypassing the queue using sendNow.
+     *
+     * @param  string  $token
+     * @return void
+     */
+    public function sendPasswordResetNotification($token)
+    {
+        \Illuminate\Support\Facades\Notification::sendNow($this, new \Illuminate\Auth\Notifications\ResetPassword($token));
+    }
 }

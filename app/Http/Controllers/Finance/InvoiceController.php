@@ -25,7 +25,25 @@ class InvoiceController extends Controller
 
     public function index()
     {
-        $invoices = Invoice::with(['rfq', 'estimate', 'customer'])->orderBy('created_at', 'desc')->get();
+        $authUser = auth()->user();
+        $query = Invoice::with(['rfq', 'estimate', 'customer'])->orderBy('created_at', 'desc');
+
+        if ($authUser->hasRole(['agent', 'super_agent'])) {
+            $customerIds = \App\Models\Rfq::where('assigned_agent_id', $authUser->id)
+                ->pluck('customer_id')
+                ->filter()
+                ->unique();
+
+            $query->where(function ($q) use ($authUser, $customerIds) {
+                $q->whereHas('rfq', function ($q) use ($authUser) {
+                    $q->where('assigned_agent_id', $authUser->id);
+                })->orWhere(function ($q) use ($customerIds) {
+                    $q->whereNull('rfq_id')->whereIn('customer_id', $customerIds);
+                });
+            });
+        }
+
+        $invoices = $query->get();
 
         if (request()->wantsJson()) {
             return response()->json(['data' => $invoices]);
@@ -63,11 +81,8 @@ class InvoiceController extends Controller
 
         if ($authUser->hasRole(['agent', 'super_agent'])) {
             // Agents see only customers from their own assigned RFQs
-            $customerIds = \App\Models\AgentRfqAssignment::where('agent_id', $authUser->id)
-                ->where('is_active', true)
-                ->with('rfq:id,customer_id')
-                ->get()
-                ->pluck('rfq.customer_id')
+            $customerIds = \App\Models\Rfq::where('assigned_agent_id', $authUser->id)
+                ->pluck('customer_id')
                 ->filter()
                 ->unique();
 

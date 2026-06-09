@@ -136,7 +136,7 @@
                     <div>
                         <label class="label" for="full_name">Full Name <span class="badge">Required</span></label>
                         <input type="text" id="full_name" name="full_name" class="input-field @error('full_name') border-red-400 @enderror"
-                               placeholder="e.g. Ahmed Ibrahim" value="{{ old('full_name') }}" required>
+                               placeholder="e.g. Ahmed Ibrahim" value="{{ old('full_name', auth()->user()->name ?? '') }}" required>
                         @error('full_name') <p class="error-msg">{{ $message }}</p> @enderror
                     </div>
                     <div>
@@ -150,13 +150,13 @@
                     <div>
                         <label class="label" for="whatsapp_number">WhatsApp Number <span class="badge">Required</span></label>
                         <input type="tel" id="whatsapp_number" name="whatsapp_number" class="input-field @error('whatsapp_number') border-red-400 @enderror"
-                               placeholder="e.g. 08031234567" value="{{ old('whatsapp_number') }}" required>
+                               placeholder="e.g. 08031234567" value="{{ old('whatsapp_number', auth()->user()->whatsapp_number ?? '') }}" required>
                         @error('whatsapp_number') <p class="error-msg">{{ $message }}</p> @enderror
                     </div>
                     <div>
-                        <label class="label" for="email">Email Address <span class="badge badge-opt">Optional</span></label>
+                        <label class="label" for="email">Email Address <span class="badge">Required</span></label>
                         <input type="email" id="email" name="email" class="input-field @error('email') border-red-400 @enderror"
-                               placeholder="you@example.com" value="{{ old('email') }}">
+                               placeholder="you@example.com" value="{{ old('email', auth()->user()->email ?? '') }}" required>
                         @error('email') <p class="error-msg">{{ $message }}</p> @enderror
                     </div>
                 </div>
