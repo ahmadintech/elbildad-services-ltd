@@ -62,6 +62,10 @@ class PublicRfqController extends Controller
             }
         }
 
+        if (empty($user->whatsapp_number)) {
+            $user->update(['whatsapp_number' => $data['whatsapp_number']]);
+        }
+
         $imagePath = null;
         if ($request->hasFile('image')) {
             $imagePath = $request->file('image')->store('rfq_images', 'public');

@@ -157,7 +157,7 @@
             </div>
             <div class="flex justify-between text-sm text-gray-500 dark:text-gray-400">
               <span>Tax/Other charges:</span>
-              <span>{{ formatCurrency(0) }}</span>
+              <span>{{ formatCurrency(zoho.tax_total || 0) }}</span>
             </div>
             <div class="flex justify-between text-sm font-semibold text-success-600 dark:text-success-400">
               <span>Amount Paid:</span>

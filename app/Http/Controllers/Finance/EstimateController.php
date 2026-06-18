@@ -8,6 +8,7 @@ use App\Models\Estimate;
 use App\Models\User;
 use App\Models\Item;
 use App\Services\Zoho\ZohoEstimateService;
+use App\Services\Zoho\ZohoTaxService;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
@@ -16,10 +17,12 @@ use Inertia\Inertia;
 class EstimateController extends Controller
 {
     protected ZohoEstimateService $estimateService;
+    protected ZohoTaxService $taxService;
 
-    public function __construct(ZohoEstimateService $estimateService)
+    public function __construct(ZohoEstimateService $estimateService, ZohoTaxService $taxService)
     {
         $this->estimateService = $estimateService;
+        $this->taxService = $taxService;
     }
 
     public function index()
@@ -60,9 +63,12 @@ class EstimateController extends Controller
             'line_items.*.quantity' => 'required|numeric|min:1',
             'line_items.*.description' => 'nullable|string',
             'line_items.*.zoho_item_id' => 'nullable|string',
+            'shipping_charge' => 'nullable|numeric|min:0',
         ]);
 
-        $this->estimateService->createEstimate($rfq, $validated['line_items']);
+        $this->estimateService->createEstimate($rfq, $validated['line_items'], [
+            'shipping_charge' => $validated['shipping_charge'] ?? 0,
+        ]);
 
         return Redirect::back()->with('success', 'Zoho Estimate created successfully from RFQ.');
     }
@@ -78,22 +84,25 @@ class EstimateController extends Controller
                 ->filter()
                 ->unique();
 
-            $customers = User::role('customer')
-                ->whereIn('id', $customerIds)
+            $customers = User::whereIn('id', $customerIds)
                 ->orderBy('name')
                 ->get(['id', 'name', 'email']);
         } else {
             // Admins/owners see all customers
-            $customers = User::role('customer')
+            $customers = User::where(function ($query) {
+                    $query->role('customer')->orWhereHas('rfqs');
+                })
                 ->orderBy('name')
                 ->get(['id', 'name', 'email']);
         }
 
         $items = Item::orderBy('name')->get();
+        $taxes = $this->taxService->listTaxes();
 
         return Inertia::render('Admin/Finance/Estimates/Create', [
             'customers' => $customers,
             'items' => $items,
+            'taxes' => $taxes,
         ]);
     }
 
@@ -109,6 +118,8 @@ class EstimateController extends Controller
             'line_items.*.quantity' => 'required|numeric|min:1',
             'line_items.*.description' => 'nullable|string',
             'line_items.*.zoho_item_id' => 'nullable|string',
+            'line_items.*.tax_id' => 'nullable|string',
+            'shipping_charge' => 'nullable|numeric|min:0',
         ]);
 
         $customer = User::findOrFail($validated['customer_id']);
@@ -116,6 +127,7 @@ class EstimateController extends Controller
         $this->estimateService->createManualEstimate($customer, $validated['line_items'], [
             'valid_date' => $validated['valid_date'],
             'notes' => $validated['notes'] ?? '',
+            'shipping_charge' => $validated['shipping_charge'] ?? 0,
         ]);
 
         return Redirect::route('finance.estimates.index')->with('success', 'Quotation created successfully.');

@@ -9,6 +9,7 @@ use App\Models\Invoice;
 use App\Models\User;
 use App\Models\Item;
 use App\Services\Zoho\ZohoInvoiceService;
+use App\Services\Zoho\ZohoTaxService;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
@@ -17,10 +18,12 @@ use Inertia\Inertia;
 class InvoiceController extends Controller
 {
     protected ZohoInvoiceService $invoiceService;
+    protected ZohoTaxService $taxService;
 
-    public function __construct(ZohoInvoiceService $invoiceService)
+    public function __construct(ZohoInvoiceService $invoiceService, ZohoTaxService $taxService)
     {
         $this->invoiceService = $invoiceService;
+        $this->taxService = $taxService;
     }
 
     public function index()
@@ -61,9 +64,12 @@ class InvoiceController extends Controller
             'line_items.*.quantity' => 'required|numeric|min:1',
             'line_items.*.description' => 'nullable|string',
             'line_items.*.zoho_item_id' => 'nullable|string',
+            'shipping_charge' => 'nullable|numeric|min:0',
         ]);
 
-        $this->invoiceService->createInvoiceFromRfq($rfq, $validated['line_items']);
+        $this->invoiceService->createInvoiceFromRfq($rfq, $validated['line_items'], [
+            'shipping_charge' => $validated['shipping_charge'] ?? 0,
+        ]);
 
         return Redirect::back()->with('success', 'Zoho Invoice generated directly from RFQ.');
     }
@@ -86,22 +92,25 @@ class InvoiceController extends Controller
                 ->filter()
                 ->unique();
 
-            $customers = User::role('customer')
-                ->whereIn('id', $customerIds)
+            $customers = User::whereIn('id', $customerIds)
                 ->orderBy('name')
                 ->get(['id', 'name', 'email']);
         } else {
             // Admins/owners see all customers
-            $customers = User::role('customer')
+            $customers = User::where(function ($query) {
+                    $query->role('customer')->orWhereHas('rfqs');
+                })
                 ->orderBy('name')
                 ->get(['id', 'name', 'email']);
         }
 
         $items = Item::orderBy('name')->get();
+        $taxes = $this->taxService->listTaxes();
 
         return Inertia::render('Admin/Finance/Invoices/Create', [
             'customers' => $customers,
             'items' => $items,
+            'taxes' => $taxes,
         ]);
     }
 
@@ -118,6 +127,8 @@ class InvoiceController extends Controller
             'line_items.*.quantity' => 'required|numeric|min:1',
             'line_items.*.description' => 'nullable|string',
             'line_items.*.zoho_item_id' => 'nullable|string',
+            'line_items.*.tax_id' => 'nullable|string',
+            'shipping_charge' => 'nullable|numeric|min:0',
         ]);
 
         $customer = User::findOrFail($validated['customer_id']);
@@ -126,6 +137,7 @@ class InvoiceController extends Controller
             'date' => $validated['date'],
             'due_date' => $validated['due_date'],
             'notes' => $validated['notes'] ?? '',
+            'shipping_charge' => $validated['shipping_charge'] ?? 0,
         ]);
 
         return Redirect::route('finance.invoices.index')->with('success', 'Invoice created successfully.');

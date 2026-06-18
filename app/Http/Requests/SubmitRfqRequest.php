@@ -27,7 +27,7 @@ class SubmitRfqRequest extends FormRequest
         return [
             'full_name' => ['required', 'string', 'max:255'],
             'company_name' => ['nullable', 'string', 'max:255'],
-            'whatsapp_number' => ['required', 'string', 'max:20'],
+            'whatsapp_number' => ['required', 'string', 'digits:11'],
             'email' => ['required', 'email', 'max:255'],
             'location' => ['nullable', 'string', 'max:255'],
             'product_name' => ['required', 'string', 'max:255'],

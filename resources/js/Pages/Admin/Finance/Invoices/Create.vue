@@ -102,7 +102,7 @@
                   <input v-model="item.quantity" type="number" min="1" class="dark:bg-dark-900 h-10 w-full rounded-lg border border-gray-300 px-3 py-1.5 text-xs text-gray-800 focus:border-brand-300 dark:border-gray-700 dark:text-white" required />
                 </div>
                 <!-- Total -->
-                <div class="col-span-4 sm:col-span-2 text-right">
+                <div class="col-span-4 sm:col-span-4 text-right">
                   <p class="text-xs text-gray-400 mb-1">Total</p>
                   <p class="font-semibold text-sm text-gray-800 dark:text-white whitespace-nowrap">{{ formatCurrency(item.rate * item.quantity) }}</p>
                 </div>
@@ -111,10 +111,38 @@
           </div>
 
           <!-- Total summary -->
-          <div class="flex justify-end pt-4 border-t border-gray-100 dark:border-gray-800">
-            <div class="text-right space-y-1">
-              <p class="text-sm text-gray-500 dark:text-gray-400">Total Invoice Amount</p>
-              <p class="text-2xl font-bold text-gray-800 dark:text-white">{{ formatCurrency(overallTotal) }}</p>
+          <div class="flex flex-col md:flex-row md:items-end justify-between pt-4 border-t border-gray-100 dark:border-gray-800 gap-6">
+            <div class="w-full md:w-1/3">
+              <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Apply Tax to All Items</label>
+              <select v-model="form.global_tax_id" class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-800 focus:border-brand-300 dark:border-gray-700 dark:text-white">
+                <option value="">No Tax</option>
+                <option v-for="tax in taxes" :key="tax.tax_id" :value="tax.tax_id">
+                  {{ tax.tax_name }} ({{ tax.tax_percentage }}%)
+                </option>
+              </select>
+              <p class="mt-1 text-xs text-gray-500">To apply multiple taxes (e.g. VAT + Service Charge), create a "Tax Group" in your Zoho Settings first.</p>
+            </div>
+            <div class="w-full md:w-1/4">
+              <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Shipping Charge (₦)</label>
+              <input v-model="form.shipping_charge" type="number" step="0.01" min="0" class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-800 focus:border-brand-300 dark:border-gray-700 dark:text-white" />
+            </div>
+            <div class="text-right space-y-2 w-full md:w-auto">
+              <div class="flex justify-end gap-8 text-sm text-gray-500 dark:text-gray-400">
+                <span>Subtotal:</span>
+                <span class="font-medium text-gray-800 dark:text-gray-300">{{ formatCurrency(subTotal) }}</span>
+              </div>
+              <div v-if="form.global_tax_id" class="flex justify-end gap-8 text-sm text-gray-500 dark:text-gray-400">
+                <span>Tax Amount:</span>
+                <span class="font-medium text-gray-800 dark:text-gray-300">{{ formatCurrency(taxAmount) }}</span>
+              </div>
+              <div v-if="form.shipping_charge > 0" class="flex justify-end gap-8 text-sm text-gray-500 dark:text-gray-400">
+                <span>Shipping Charge:</span>
+                <span class="font-medium text-gray-800 dark:text-gray-300">{{ formatCurrency(form.shipping_charge) }}</span>
+              </div>
+              <div class="flex justify-end gap-8 pt-2 border-t border-gray-100 dark:border-gray-800">
+                <span class="text-sm font-bold text-gray-800 dark:text-gray-200 mt-1">Total Invoice Amount:</span>
+                <span class="text-2xl font-bold text-brand-600 dark:text-brand-400">{{ formatCurrency(overallTotal) }}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -148,7 +176,8 @@ const { formatCurrency } = useCurrency()
 
 const props = defineProps({
   customers: Array,
-  items: Array
+  items: Array,
+  taxes: Array
 })
 
 const form = useForm({
@@ -156,6 +185,8 @@ const form = useForm({
   date: new Date().toISOString().split('T')[0],
   due_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
   notes: '',
+  global_tax_id: '',
+  shipping_charge: 0,
   line_items: [
     { name: '', description: '', rate: 0.00, quantity: 1, zoho_item_id: null }
   ]
@@ -189,15 +220,32 @@ const onPresetItemChange = (index, event) => {
   }
 }
 
-const overallTotal = computed(() => {
+const subTotal = computed(() => {
   return form.line_items.reduce((sum, item) => {
-    const rate = parseFloat(item.rate) || 0
-    const qty = parseFloat(item.quantity) || 0
-    return sum + (rate * qty)
-  }, 0)
+    const rate = parseFloat(item.rate) || 0;
+    const qty = parseFloat(item.quantity) || 0;
+    return sum + (rate * qty);
+  }, 0);
+})
+
+const taxAmount = computed(() => {
+  if (!form.global_tax_id) return 0;
+  const tax = props.taxes?.find(t => t.tax_id === form.global_tax_id);
+  const pct = tax ? parseFloat(tax.tax_percentage) : 0;
+  return subTotal.value * (pct / 100);
+})
+
+const overallTotal = computed(() => {
+  return subTotal.value + taxAmount.value + parseFloat(form.shipping_charge || 0);
 })
 
 const submit = () => {
-  form.post(route('finance.invoices.store'))
+  form.transform((data) => ({
+    ...data,
+    line_items: data.line_items.map(item => ({
+      ...item,
+      tax_id: data.global_tax_id || null
+    }))
+  })).post(route('finance.invoices.store'))
 }
 </script>

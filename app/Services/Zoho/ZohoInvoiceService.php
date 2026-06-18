@@ -48,6 +48,12 @@ class ZohoInvoiceService
             if (!empty($item['item_id'])) {
                 $formattedItem['item_id'] = $item['item_id'];
             }
+            if (!empty($item['tax_id'])) {
+                $formattedItem['tax_id'] = $item['tax_id'];
+            }
+            if (isset($item['discount'])) {
+                $formattedItem['discount'] = $item['discount'];
+            }
             $formattedItems[] = $formattedItem;
         }
 
@@ -58,6 +64,16 @@ class ZohoInvoiceService
             'due_date' => now()->addDays(14)->format('Y-m-d'),
             'line_items' => $formattedItems,
         ];
+
+        if (isset($zohoEstimate['estimate']['is_inclusive_tax'])) {
+            $payload['is_inclusive_tax'] = $zohoEstimate['estimate']['is_inclusive_tax'];
+        }
+        if (isset($zohoEstimate['estimate']['shipping_charge'])) {
+            $payload['shipping_charge'] = $zohoEstimate['estimate']['shipping_charge'];
+        }
+        if (isset($zohoEstimate['estimate']['adjustment'])) {
+            $payload['adjustment'] = $zohoEstimate['estimate']['adjustment'];
+        }
 
         $response = $this->client->post('/invoices?estimate_id=' . $estimate->zoho_estimate_id, $payload);
         $zohoInvoiceId = $response['invoice']['invoice_id'] ?? null;
@@ -83,7 +99,7 @@ class ZohoInvoiceService
         return array_merge($response['invoice'], ['local_id' => $localInvoice->id]);
     }
 
-    public function createInvoiceFromRfq(Rfq $rfq, array $lineItems): array
+    public function createInvoiceFromRfq(Rfq $rfq, array $lineItems, array $options = []): array
     {
         $customer = $rfq->customer;
         if (!$customer) {
@@ -111,9 +127,15 @@ class ZohoInvoiceService
             if (!empty($item['zoho_item_id'])) {
                 $lineItem['item_id'] = $item['zoho_item_id'];
             }
+            if (!empty($item['tax_id'])) {
+                $lineItem['tax_id'] = $item['tax_id'];
+            }
             $zohoLineItems[] = $lineItem;
             $total += (float)$item['rate'] * (float)$item['quantity'];
         }
+
+        $shippingCharge = (float)($options['shipping_charge'] ?? 0);
+        $total += $shippingCharge;
 
         $payload = [
             'customer_id' => (string)$customer->zoho_contact_id,
@@ -122,6 +144,10 @@ class ZohoInvoiceService
             'date' => now()->format('Y-m-d'),
             'due_date' => now()->addDays(14)->format('Y-m-d'),
         ];
+
+        if ($shippingCharge > 0) {
+            $payload['shipping_charge'] = $shippingCharge;
+        }
 
         Log::debug("Creating invoice from RFQ with payload", ['customer_id' => $customer->zoho_contact_id, 'customer_local_id' => $customer->id]);
         $response = $this->client->post('/invoices', $payload);
@@ -171,9 +197,15 @@ class ZohoInvoiceService
             if (!empty($item['zoho_item_id'])) {
                 $lineItem['item_id'] = $item['zoho_item_id'];
             }
+            if (!empty($item['tax_id'])) {
+                $lineItem['tax_id'] = $item['tax_id'];
+            }
             $zohoLineItems[] = $lineItem;
             $total += (float)$item['rate'] * (float)$item['quantity'];
         }
+
+        $shippingCharge = (float)($options['shipping_charge'] ?? 0);
+        $total += $shippingCharge;
 
         $payload = [
             'customer_id' => (string)$customer->zoho_contact_id,
@@ -182,6 +214,10 @@ class ZohoInvoiceService
             'date' => $options['date'] ?? now()->format('Y-m-d'),
             'due_date' => $options['due_date'] ?? now()->addDays(14)->format('Y-m-d'),
         ];
+
+        if ($shippingCharge > 0) {
+            $payload['shipping_charge'] = $shippingCharge;
+        }
 
         Log::debug("Creating manual invoice with payload", ['customer_id' => $customer->zoho_contact_id, 'customer_local_id' => $customer->id]);
         $response = $this->client->post('/invoices', $payload);

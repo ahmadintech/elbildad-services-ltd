@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\URL;
 use App\Models\User;
 use App\Models\Item;
 use App\Observers\UserObserver;
@@ -25,6 +26,10 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Vite::prefetch(concurrency: 3);
+
+        if (config('app.env') === 'production') {
+            URL::forceScheme('https');
+        }
 
         // Register Zoho Sync Observers
         User::observe(UserObserver::class);

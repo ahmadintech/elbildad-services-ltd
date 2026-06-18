@@ -150,7 +150,8 @@
                     <div>
                         <label class="label" for="whatsapp_number">WhatsApp Number <span class="badge">Required</span></label>
                         <input type="tel" id="whatsapp_number" name="whatsapp_number" class="input-field @error('whatsapp_number') border-red-400 @enderror"
-                               placeholder="e.g. 08031234567" value="{{ old('whatsapp_number', auth()->user()->whatsapp_number ?? '') }}" required>
+                               placeholder="e.g. 08031234567" value="{{ old('whatsapp_number', auth()->user()->whatsapp_number ?? '') }}" 
+                               pattern="[0-9]{11}" minlength="11" maxlength="11" title="Please enter exactly 11 digits" required>
                         @error('whatsapp_number') <p class="error-msg">{{ $message }}</p> @enderror
                     </div>
                     <div>

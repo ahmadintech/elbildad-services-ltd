@@ -20,7 +20,7 @@ class ZohoEstimateService
         $this->contactService = $contactService;
     }
 
-    public function createEstimate(Rfq $rfq, array $lineItems): array
+    public function createEstimate(Rfq $rfq, array $lineItems, array $options = []): array
     {
         $customer = $rfq->customer;
         
@@ -52,9 +52,15 @@ class ZohoEstimateService
             if (isset($item['zoho_item_id']) && $item['zoho_item_id']) {
                 $lineItem['item_id'] = $item['zoho_item_id'];
             }
+            if (isset($item['tax_id']) && $item['tax_id']) {
+                $lineItem['tax_id'] = $item['tax_id'];
+            }
             $zohoLineItems[] = $lineItem;
             $total += (float)$item['rate'] * (float)$item['quantity'];
         }
+
+        $shippingCharge = (float)($options['shipping_charge'] ?? 0);
+        $total += $shippingCharge;
 
         Log::debug('Zoho Estimate Payload', ['payload' => [
             'customer_id' => (string)$customer->zoho_contact_id,
@@ -67,6 +73,10 @@ class ZohoEstimateService
             'notes' => 'Generated automatically from RFQ #' . $rfq->product_name,
             'valid_date' => now()->addDays(30)->format('Y-m-d'),
         ];
+
+        if ($shippingCharge > 0) {
+            $payload['shipping_charge'] = $shippingCharge;
+        }
 
         $response = $this->client->post('/estimates', $payload);
         $zohoEstimateId = $response['estimate']['estimate_id'] ?? null;
@@ -114,9 +124,15 @@ class ZohoEstimateService
             if (isset($item['zoho_item_id']) && $item['zoho_item_id']) {
                 $lineItem['item_id'] = $item['zoho_item_id'];
             }
+            if (isset($item['tax_id']) && $item['tax_id']) {
+                $lineItem['tax_id'] = $item['tax_id'];
+            }
             $zohoLineItems[] = $lineItem;
             $total += (float)$item['rate'] * (float)$item['quantity'];
         }
+
+        $shippingCharge = (float)($options['shipping_charge'] ?? 0);
+        $total += $shippingCharge;
 
         Log::debug('Zoho Manual Estimate Payload', ['payload' => [
             'customer_id' => (string)$customer->zoho_contact_id,
@@ -129,6 +145,10 @@ class ZohoEstimateService
             'notes' => $options['notes'] ?? 'Manual Estimate',
             'valid_date' => $options['valid_date'] ?? now()->addDays(30)->format('Y-m-d'),
         ];
+
+        if ($shippingCharge > 0) {
+            $payload['shipping_charge'] = $shippingCharge;
+        }
 
         $response = $this->client->post('/estimates', $payload);
         $zohoEstimateId = $response['estimate']['estimate_id'] ?? null;
