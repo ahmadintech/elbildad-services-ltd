@@ -27,6 +27,7 @@
         "@fullcalendar/list": "^6.1.15",
         "@fullcalendar/timegrid": "^6.1.15",
         "@fullcalendar/vue3": "^6.1.15",
+        "@vueup/vue-quill": "^1.5.5",
         "apexcharts": "^4.4.0",
         "dropzone": "^6.0.0-beta.2",
         "flatpickr": "^4.6.13",
