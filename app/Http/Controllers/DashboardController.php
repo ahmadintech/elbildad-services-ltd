@@ -87,17 +87,37 @@ class DashboardController extends Controller
         ];
 
         // RFQ Status Breakdown
+        $labels = [];
+        $data = [];
+        $colors = [];
+        $colorMap = [
+            'pending' => '#FF6B6B',
+            'assigned' => '#FFA500',
+            'sourcing' => '#4ECDC4',
+            'purchased' => '#45B7D1',
+            'shipped' => '#96CEB4',
+            'completed' => '#6BCB77',
+            'queued' => '#FF8C00',
+            'not_found' => '#D32F2F',
+            'quoted' => '#03A9F4',
+            'awaiting_payment' => '#FFC107',
+            'payment_received' => '#4CAF50',
+        ];
+
+        foreach (\App\Enums\RfqStatusEnum::cases() as $status) {
+            $count = Rfq::where('status', $status->value)->count();
+            // Show if it has data or if it's one of the common statuses
+            if ($count > 0 || in_array($status->value, ['pending', 'assigned', 'sourcing', 'completed'])) {
+                $labels[] = ucfirst(str_replace('_', ' ', $status->value));
+                $data[] = $count;
+                $colors[] = $colorMap[$status->value] ?? '#808080';
+            }
+        }
+
         $rfqStatusData = [
-            'labels' => ['Pending', 'Assigned', 'Sourcing', 'Purchased', 'Shipped', 'Completed'],
-            'data' => [
-                Rfq::where('status', 'pending')->count(),
-                Rfq::where('status', 'assigned')->count(),
-                Rfq::where('status', 'sourcing')->count(),
-                Rfq::where('status', 'purchased')->count(),
-                Rfq::where('status', 'shipped')->count(),
-                Rfq::where('status', 'completed')->count(),
-            ],
-            'colors' => ['#FF6B6B', '#FFA500', '#4ECDC4', '#45B7D1', '#96CEB4', '#6BCB77']
+            'labels' => $labels,
+            'data' => $data,
+            'colors' => $colors
         ];
 
         // Monthly RFQ Trend (last 12 months)
@@ -107,16 +127,20 @@ class DashboardController extends Controller
         $monthlyRevenue = $this->getMonthlyRevenueTrend();
 
         // Recent RFQs
-        $recent_rfqs = Rfq::with(['assignedAgent', 'customer:id,name'])
+        $recent_rfqs = Rfq::with(['assignedAgent', 'customer:id,name', 'assignments' => function($q) {
+                $q->latest('assigned_at');
+            }])
             ->orderBy('created_at', 'desc')
             ->limit(10)
             ->get()
             ->map(function($rfq) {
+                $latestAssignment = $rfq->assignments->first();
                 return [
                     'id' => $rfq->id,
                     'product_name' => $rfq->product_name,
                     'status' => $rfq->status->value,
                     'created_at_formatted' => $rfq->created_at->format('M d, Y'),
+                    'assigned_at' => $latestAssignment && $latestAssignment->assigned_at ? $latestAssignment->assigned_at->format('M d, Y h:i A') : 'Not Assigned',
                     'target_price' => $rfq->target_price ?? 'N/A',
                     'quantity' => $rfq->quantity->value,
                     'assigned_agent' => $rfq->assignedAgent ? ['name' => $rfq->assignedAgent->name] : ['name' => 'Unassigned'],
@@ -165,15 +189,23 @@ class DashboardController extends Controller
         ];
 
         // Top Agents by RFQ assignment
-        $topAgents = User::whereHas('rfqAssignments')
-            ->withCount('rfqAssignments')
-            ->orderBy('rfq_assignments_count', 'desc')
+        $topAgents = User::whereHas('assignedRfqs')
+            ->withCount(['assignedRfqs', 'assignedRfqs as completed_rfqs_count' => function($q) {
+                $q->where('status', 'completed');
+            }])
+            ->orderBy('assigned_rfqs_count', 'desc')
             ->limit(5)
             ->get()
             ->map(function($agent) {
+                $percentage = $agent->assigned_rfqs_count > 0 
+                    ? round(($agent->completed_rfqs_count / $agent->assigned_rfqs_count) * 100) 
+                    : 0;
+
                 return [
                     'name' => $agent->name,
-                    'rfq_count' => $agent->rfq_assignments_count,
+                    'rfq_count' => $agent->assigned_rfqs_count,
+                    'completed_count' => $agent->completed_rfqs_count,
+                    'percentage' => $percentage,
                     'company' => $agent->email
                 ];
             });
@@ -195,6 +227,22 @@ class DashboardController extends Controller
         $paymentCompletionRate = $totalInvoiceAmount > 0 ? round(($paidAmount / $totalInvoiceAmount) * 100, 1) : 0;
         $systemHealth = round(($completionRate + $paymentCompletionRate) / 2, 1);
 
+        // Agent Activities
+        $agentActivities = User::role(['agent', 'super_agent'])
+            ->withCount(['assignedRfqs as completed_rfqs' => function($q) {
+                $q->where('status', 'completed');
+            }])
+            ->limit(5)
+            ->get()
+            ->map(function($agent) {
+                return [
+                    'name' => $agent->name,
+                    'last_login_at' => $agent->last_login_at ? Carbon::parse($agent->last_login_at)->diffForHumans() : 'Never',
+                    'avg_response_time' => $agent->avg_response_time ? $agent->avg_response_time . ' mins' : 'N/A',
+                    'completed_rfqs' => $agent->completed_rfqs
+                ];
+            });
+
         return Inertia::render('Admin/Dashboard', [
             'stats' => $stats,
             'summaryStats' => $summaryStats,
@@ -204,6 +252,7 @@ class DashboardController extends Controller
             'monthlyTrend' => $monthlyTrend,
             'monthlyRevenue' => $monthlyRevenue,
             'topAgents' => $topAgents,
+            'agentActivities' => $agentActivities,
             'categoryBreakdown' => $categoryBreakdown,
             'systemHealth' => [
                 'score' => $systemHealth,

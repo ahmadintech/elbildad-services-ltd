@@ -69,6 +69,9 @@
                     rfq.status === 'purchased' ? 'bg-indigo-100 text-indigo-700' :
                     rfq.status === 'shipped' ? 'bg-orange-100 text-orange-700' :
                     rfq.status === 'not_found' ? 'bg-red-100 text-red-700' :
+                    rfq.status === 'quoted' ? 'bg-sky-100 text-sky-700' :
+                    rfq.status === 'awaiting_payment' ? 'bg-amber-100 text-amber-700' :
+                    rfq.status === 'payment_received' ? 'bg-emerald-100 text-emerald-700' :
                     'bg-gray-100 text-gray-700'
                   ]">
                     {{ rfq.status.replace('_', ' ') }}
@@ -224,6 +227,9 @@
                 <option value="not_found">Not Found (Item unavailable)</option>
                 <option value="purchased">Purchased</option>
                 <option value="shipped">Shipped</option>
+                <option value="quoted">Quoted</option>
+                <option value="awaiting_payment">Awaiting Payment</option>
+                <option value="payment_received">Payment Received</option>
                 <option value="completed">Completed</option>
               </select>
               <div v-if="form.errors.status" class="text-error-500 text-xs mt-1">{{ form.errors.status }}</div>

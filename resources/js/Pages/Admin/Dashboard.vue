@@ -51,13 +51,18 @@
         </div>
 
         <!-- Revenue Trends -->
-        <div class="col-span-12">
+        <div class="col-span-12 lg:col-span-7">
           <TrendChart 
             title="Revenue Trend (Last 12 Months)"
             :labels="monthlyRevenue.labels"
             :data="monthlyRevenue.data"
             :color="monthlyRevenue.color"
           />
+        </div>
+
+        <!-- Agent Activities -->
+        <div class="col-span-12 lg:col-span-5">
+          <AgentActivities :activities="agentActivities" />
         </div>
 
         <!-- Recent RFQs -->
@@ -91,6 +96,7 @@ import QuickActions from '@/components/dashboard/QuickActions.vue'
 import RecentRfqs from '@/components/dashboard/RecentRfqs.vue'
 import FinancialOverview from '@/components/dashboard/FinancialOverview.vue'
 import TeamPerformance from '@/components/dashboard/TeamPerformance.vue'
+import AgentActivities from '@/components/dashboard/AgentActivities.vue'
 import { Head } from '@inertiajs/vue3'
 
 defineProps({
@@ -102,6 +108,7 @@ defineProps({
   monthlyTrend: Object,
   monthlyRevenue: Object,
   topAgents: Array,
+  agentActivities: Array,
   categoryBreakdown: Array,
   systemHealth: Object,
   totalStats: Object

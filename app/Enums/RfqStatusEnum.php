@@ -12,4 +12,7 @@ enum RfqStatusEnum: string
     case COMPLETED = 'completed';
     case QUEUED = 'queued';
     case NOT_FOUND = 'not_found';
+    case QUOTED = 'quoted';
+    case AWAITING_PAYMENT = 'awaiting_payment';
+    case PAYMENT_RECEIVED = 'payment_received';
 }

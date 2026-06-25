@@ -243,6 +243,16 @@ const menuGroups = computed(() => {
           path: "/admin/categories",
         },
         {
+          icon: ListIcon,
+          name: "Contact Messages",
+          path: "/admin/contact-messages",
+        },
+        {
+          icon: BoxCubeIcon,
+          name: "Send Mail",
+          path: "/admin/mail",
+        },
+        {
           icon: PlugInIcon,
           name: "Roles & Permissions",
           subItems: [

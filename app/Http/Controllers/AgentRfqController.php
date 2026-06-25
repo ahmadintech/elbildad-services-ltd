@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Enums\RfqStatusEnum;
+use App\Mail\RfqStatusUpdatedMail;
 use App\Models\Rfq;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 
 class AgentRfqController extends Controller
@@ -24,9 +26,18 @@ class AgentRfqController extends Controller
             'notes'  => ['nullable', 'string', 'max:1000'],
         ]);
 
-        $rfq->update(['status' => $validated['status']]);
+        $newStatus = RfqStatusEnum::from($validated['status']);
 
-        return back()->with('success', "RFQ #{$rfq->product_name} status updated to " . ucfirst($validated['status']) . '.');
+        $rfq->update(['status' => $newStatus]);
+
+        if ($rfq->customer?->email) {
+            Mail::to($rfq->customer->email)
+                ->queue(new RfqStatusUpdatedMail($rfq, $newStatus));
+        }
+
+        $label = str_replace('_', ' ', ucfirst($newStatus->value));
+
+        return back()->with('success', "RFQ #{$rfq->product_name} status updated to {$label}.");
     }
 
     /**

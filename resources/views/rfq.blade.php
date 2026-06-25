@@ -248,7 +248,7 @@
                 {{-- Submit --}}
                 <div>
                     <button type="submit" id="submit-btn" class="btn-submit">
-                        <span id="btn-label">Pay ₦5,000 &amp; Submit Request</span>
+                        <span id="btn-label">Submit Request</span>
                     </button>
                     <p class="text-center text-slate-400 text-xs mt-3">By submitting, you agree to our terms regarding the commitment fee.</p>
                 </div>

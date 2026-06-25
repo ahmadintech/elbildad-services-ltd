@@ -34,6 +34,12 @@ class User extends AbstractAuthenticatable
         return $this->hasMany(AgentRfqAssignment::class, 'agent_id');
     }
 
+    /** RFQs assigned to this user as an agent */
+    public function assignedRfqs(): HasMany
+    {
+        return $this->hasMany(Rfq::class, 'assigned_agent_id');
+    }
+
     /** RFQs submitted by this user as a customer */
     public function rfqs(): HasMany
     {

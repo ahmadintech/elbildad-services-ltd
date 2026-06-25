@@ -9,6 +9,7 @@ Route::get('/', function () {
 Route::get('/contact', function () {
     return view('contact');
 });
+Route::post('/contact', [\App\Http\Controllers\Admin\ContactMessageController::class, 'store'])->name('contact.submit');
 
 Route::get('/rfq', function () {
     return view('rfq');
@@ -95,6 +96,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('/categories', [\App\Http\Controllers\CategoryController::class, 'store'])->name('admin.categories.store');
             Route::put('/categories/{category}', [\App\Http\Controllers\CategoryController::class, 'update'])->name('admin.categories.update');
             Route::delete('/categories/{category}', [\App\Http\Controllers\CategoryController::class, 'destroy'])->name('admin.categories.destroy');
+
+            Route::get('/mail', [\App\Http\Controllers\Admin\MailController::class, 'index'])->name('admin.mail.index');
+            Route::post('/mail/send', [\App\Http\Controllers\Admin\MailController::class, 'send'])->name('admin.mail.send');
+
+            Route::get('/contact-messages', [\App\Http\Controllers\Admin\ContactMessageController::class, 'index'])->name('admin.contact-messages.index');
+            Route::post('/contact-messages/{contactMessage}/reply', [\App\Http\Controllers\Admin\ContactMessageController::class, 'reply'])->name('admin.contact-messages.reply');
+            Route::patch('/contact-messages/{contactMessage}/read', [\App\Http\Controllers\Admin\ContactMessageController::class, 'markAsRead'])->name('admin.contact-messages.read');
+            Route::delete('/contact-messages/{contactMessage}', [\App\Http\Controllers\Admin\ContactMessageController::class, 'destroy'])->name('admin.contact-messages.destroy');
         });
         Route::prefix('agent')->middleware('role:agent|super_agent')->group(function () {
             Route::patch('/rfqs/{rfq}/status', [\App\Http\Controllers\AgentRfqController::class, 'updateStatus'])->name('agent.rfqs.update-status');

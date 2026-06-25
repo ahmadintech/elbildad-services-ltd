@@ -12,6 +12,7 @@
             <th class="px-6 py-4 text-left text-sm font-semibold text-gray-600 dark:text-gray-400">Customer</th>
             <th class="px-6 py-4 text-left text-sm font-semibold text-gray-600 dark:text-gray-400">Status</th>
             <th class="px-6 py-4 text-left text-sm font-semibold text-gray-600 dark:text-gray-400">Agent</th>
+            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-600 dark:text-gray-400">Time Assigned</th>
             <th class="px-6 py-4 text-left text-sm font-semibold text-gray-600 dark:text-gray-400">Price</th>
             <th class="px-6 py-4 text-left text-sm font-semibold text-gray-600 dark:text-gray-400">Date</th>
           </tr>
@@ -33,6 +34,7 @@
               </span>
             </td>
             <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{{ rfq.assigned_agent.name }}</td>
+            <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{{ rfq.assigned_at }}</td>
             <td class="px-6 py-4 text-sm font-semibold text-gray-900 dark:text-white/90">{{ rfq.target_price }}</td>
             <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{{ rfq.created_at_formatted }}</td>
           </tr>

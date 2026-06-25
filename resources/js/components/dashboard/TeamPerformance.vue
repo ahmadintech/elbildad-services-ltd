@@ -10,8 +10,8 @@
           <tr class="border-b border-gray-200 dark:border-gray-800">
             <th class="px-6 py-4 text-left text-sm font-semibold text-gray-600 dark:text-gray-400">Agent Name</th>
             <th class="px-6 py-4 text-left text-sm font-semibold text-gray-600 dark:text-gray-400">Company</th>
-            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-600 dark:text-gray-400">RFQs Handled</th>
-            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-600 dark:text-gray-400">Performance</th>
+            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-600 dark:text-gray-400">RFQs Assigned</th>
+            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-600 dark:text-gray-400">Performance (Completed)</th>
           </tr>
         </thead>
         <tbody>
@@ -28,14 +28,27 @@
               </span>
             </td>
             <td class="px-6 py-4">
-              <div class="flex items-center gap-2">
+              <div 
+                class="flex items-center gap-2 cursor-help group relative"
+                :title="`${agent.completed_count} completed out of ${agent.rfq_count} assigned`"
+              >
                 <div class="h-2 w-32 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
                   <div
-                    :style="{ width: getPerformancePercentage(index) + '%' }"
-                    class="h-full rounded-full bg-gradient-to-r from-blue-500 to-green-500"
+                    :style="{ width: agent.percentage + '%' }"
+                    class="h-full rounded-full bg-gradient-to-r from-blue-500 to-green-500 transition-all duration-500"
                   ></div>
                 </div>
-                <span class="text-xs font-semibold text-gray-600 dark:text-gray-400">{{ getPerformancePercentage(index) }}%</span>
+                <span class="text-xs font-semibold text-gray-600 dark:text-gray-400">{{ agent.percentage }}%</span>
+                
+                <!-- Custom Tooltip -->
+                <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-max rounded bg-gray-900 px-3 py-1.5 text-xs text-white shadow-lg z-10">
+                  <div class="font-semibold text-gray-200 mb-0.5">Details:</div>
+                  <div class="text-gray-300">
+                    <span class="text-green-400">{{ agent.completed_count }}</span> completed / 
+                    <span class="text-blue-400">{{ agent.rfq_count }}</span> assigned
+                  </div>
+                  <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                </div>
               </div>
             </td>
           </tr>
@@ -56,10 +69,4 @@ defineProps({
     required: true
   }
 })
-
-const getPerformancePercentage = (index) => {
-  // Scores based on ranking: 1st gets 100%, 2nd gets 80%, etc.
-  const scores = [100, 80, 60, 40, 20]
-  return scores[index] || 10
-}
 </script>
