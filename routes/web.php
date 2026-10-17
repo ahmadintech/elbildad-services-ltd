@@ -23,9 +23,28 @@ Route::get('/test-roles', function () {
     ]);
 });
 
+Route::post('/webhooks/zainpay', [\App\Http\Controllers\Webhook\ZainpayWebhookController::class, 'handle'])->name('webhooks.zainpay');
+
 Route::post('/rfq/submit', [\App\Http\Controllers\PublicRfqController::class, 'submit'])->name('rfq.submit');
+Route::get('/rfq/{token}/checkout', [\App\Http\Controllers\PublicRfqController::class, 'checkout'])->name('rfq.checkout');
+Route::get('/rfq/{token}/payment-status', [\App\Http\Controllers\PublicRfqController::class, 'paymentStatus'])->name('rfq.payment-status');
+Route::post('/rfq/{token}/verify-dva', [\App\Http\Controllers\PublicRfqController::class, 'verifyDvaPayment'])->name('rfq.verify-dva');
+Route::post('/rfq/{token}/verify-payment', [\App\Http\Controllers\PublicRfqController::class, 'verifyPayment'])->name('rfq.verify-payment');
+Route::delete('/rfq/{token}/cancel', [\App\Http\Controllers\PublicRfqController::class, 'cancelCheckout'])->name('rfq.cancel');
 Route::get('/tracking/{token}', [\App\Http\Controllers\TrackingController::class, 'track'])->name('rfq.track');
 
+// Webhook test endpoint (admin only, for debugging)
+Route::post('/webhooks/zainpay/test', function (\Illuminate\Http\Request $request) {
+    if (!app()->isLocal() && !in_array($request->ip(), ['127.0.0.1', '::1'])) {
+        abort(403, 'Test endpoint only available locally');
+    }
+    $controller = new \App\Http\Controllers\Webhook\ZainpayWebhookController();
+    return $controller->handle($request);
+})->name('webhooks.zainpay.test');
+
+Route::get('/visa-application', [\App\Http\Controllers\VisaApplicationController::class, 'create'])->name('visa.apply');
+Route::post('/visa-application', [\App\Http\Controllers\VisaApplicationController::class, 'store'])->name('visa.store');
+Route::get('/visa-application/success', [\App\Http\Controllers\VisaApplicationController::class, 'success'])->name('visa.success');
 Route::get('/sourcing-companies', [\App\Http\Controllers\SourcingCompanyController::class, 'index'])->name('sourcing-companies.index');
 Route::get('/sourcing-companies/{sourcingCompany}', [\App\Http\Controllers\SourcingCompanyController::class, 'show'])->name('sourcing-companies.show');
 
@@ -56,6 +75,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/notifications/mark-all-as-read', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-as-read');
     Route::post('/notifications/{id}/mark-as-read', [\App\Http\Controllers\NotificationController::class, 'markAsRead'])->name('notifications.mark-as-read');
 
+    // Tasks & Scheduled Talks (monday.com style)
+    Route::middleware('role:admin|owner|agent|super_agent')->group(function () {
+        Route::get('/tasks', [\App\Http\Controllers\TaskController::class, 'index'])->name('tasks.index');
+        Route::post('/tasks', [\App\Http\Controllers\TaskController::class, 'store'])->name('tasks.store');
+        Route::put('/tasks/{task}', [\App\Http\Controllers\TaskController::class, 'update'])->name('tasks.update');
+        Route::patch('/tasks/{task}/status', [\App\Http\Controllers\TaskController::class, 'updateStatus'])->name('tasks.update-status');
+        Route::post('/tasks/{task}/toggle-timer', [\App\Http\Controllers\TaskController::class, 'toggleTimer'])->name('tasks.toggle-timer');
+        Route::delete('/tasks/{task}', [\App\Http\Controllers\TaskController::class, 'destroy'])->name('tasks.destroy');
+        Route::get('/tasks/due-reminders', [\App\Http\Controllers\TaskController::class, 'dueReminders'])->name('tasks.due-reminders');
+        Route::post('/tasks/{task}/acknowledge-reminder', [\App\Http\Controllers\TaskController::class, 'acknowledgeReminder'])->name('tasks.acknowledge-reminder');
+    });
+
+    Route::patch('/visa-application/{visaApplication}/status', [\App\Http\Controllers\VisaApplicationController::class, 'updateStatus'])
+        ->middleware('role:visa_admin|visa_agent')
+        ->name('visa.applications.update-status');
+
     Route::prefix('admin')->group(function () {
         Route::middleware(['role:admin|owner'])->group(function () {
             Route::get('/users', [\App\Http\Controllers\UserController::class, 'index'])->name('admin.users');
@@ -75,6 +110,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::delete('/permissions/{permission:id}', [\App\Http\Controllers\PermissionController::class, 'destroy'])->name('admin.permissions.destroy');
 
             Route::get('/rfqs', [\App\Http\Controllers\Admin\RfqController::class, 'index'])->name('admin.rfqs.index');
+            Route::post('/rfqs/{rfq}/verify-payment', [\App\Http\Controllers\Admin\RfqController::class, 'verifyPayment'])->name('admin.rfqs.verify-payment');
+            Route::post('/rfqs/{rfq}/check-zainpay', [\App\Http\Controllers\Admin\RfqController::class, 'checkZainpay'])->name('admin.rfqs.check-zainpay');
             Route::get('/rfqs/{rfq}', [\App\Http\Controllers\Admin\RfqController::class, 'show'])->name('admin.rfqs.show');
             Route::put('/rfqs/{rfq}', [\App\Http\Controllers\Admin\RfqController::class, 'update'])->name('admin.rfqs.update');
             Route::delete('/rfqs/{rfq}', [\App\Http\Controllers\Admin\RfqController::class, 'destroy'])->name('admin.rfqs.destroy');
@@ -104,12 +141,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('/contact-messages/{contactMessage}/reply', [\App\Http\Controllers\Admin\ContactMessageController::class, 'reply'])->name('admin.contact-messages.reply');
             Route::patch('/contact-messages/{contactMessage}/read', [\App\Http\Controllers\Admin\ContactMessageController::class, 'markAsRead'])->name('admin.contact-messages.read');
             Route::delete('/contact-messages/{contactMessage}', [\App\Http\Controllers\Admin\ContactMessageController::class, 'destroy'])->name('admin.contact-messages.destroy');
+
+            Route::get('/agent-activity', [\App\Http\Controllers\Admin\AgentActivityController::class, 'index'])->name('admin.agent-activity');
+            Route::get('/payments', [\App\Http\Controllers\PaymentController::class, 'adminIndex'])->name('admin.payments');
         });
         Route::prefix('agent')->middleware('role:agent|super_agent')->group(function () {
             Route::patch('/rfqs/{rfq}/status', [\App\Http\Controllers\AgentRfqController::class, 'updateStatus'])->name('agent.rfqs.update-status');
             Route::patch('/profile', [\App\Http\Controllers\AgentRfqController::class, 'updateProfile'])->name('agent.profile.update');
         });
     });
+
+    // Customer payments route
+    Route::get('/payments', [\App\Http\Controllers\PaymentController::class, 'index'])->name('payments.index');
 
     // Owner, Admin, and Agent Finance Routes
     Route::middleware(['role:owner|admin|agent|super_agent'])->group(function () {
@@ -151,6 +194,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('/reports/invoice-summary', [\App\Http\Controllers\Finance\ReportController::class, 'invoiceSummary'])->name('finance.reports.invoice-summary')->middleware('role:owner|admin');
             Route::get('/reports/payments-received', [\App\Http\Controllers\Finance\ReportController::class, 'paymentReceived'])->name('finance.reports.payments-received')->middleware('role:owner|admin');
             Route::get('/reports/outstanding-receivables', [\App\Http\Controllers\Finance\ReportController::class, 'outstandingReceivables'])->name('finance.reports.outstanding-receivables')->middleware('role:owner|admin');
+
+            // Expenses (Admin & Owner Only)
+            Route::middleware(['role:owner|admin'])->group(function () {
+                Route::get('/expenses', [\App\Http\Controllers\Finance\ExpenseController::class, 'index'])->name('finance.expenses.index');
+                Route::post('/expenses', [\App\Http\Controllers\Finance\ExpenseController::class, 'store'])->name('finance.expenses.store');
+                Route::put('/expenses/{expense}', [\App\Http\Controllers\Finance\ExpenseController::class, 'update'])->name('finance.expenses.update');
+                Route::delete('/expenses/{expense}', [\App\Http\Controllers\Finance\ExpenseController::class, 'destroy'])->name('finance.expenses.destroy');
+                Route::get('/expenses/export', [\App\Http\Controllers\Finance\ExpenseController::class, 'export'])->name('finance.expenses.export');
+            });
         });
     });
 

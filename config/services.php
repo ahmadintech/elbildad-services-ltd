@@ -57,4 +57,13 @@ return [
         'base_url' => env('ZOHO_BASE_URL', 'https://www.zohoapis.com/invoice/v3'),
     ],
 
+    'zainpay' => [
+        'secret_key' => env('ZAINPAY_SECRET_KEY'),
+        'private_key' => env('ZAINPAY_PRIVATE_KEY'),
+        'inline_key' => env('ZAINPAY_INLINE_KEY'),
+        'zainbox_code' => env('ZAINPAY_ZAINBOX_CODE'),
+        'base_url' => env('ZAINPAY_BASE_URL', 'https://api.zainpay.ng'),
+        'mode' => env('ZAINPAY_MODE', 'live'),
+    ],
+
 ];

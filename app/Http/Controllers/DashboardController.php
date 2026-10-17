@@ -26,6 +26,14 @@ class DashboardController extends Controller
             return $this->adminDashboard($user);
         }
 
+        if ($user->hasRole('visa_admin')) {
+            return $this->visaAdminDashboard($user);
+        }
+
+        if ($user->hasRole('visa_agent')) {
+            return $this->visaAgentDashboard($user);
+        }
+
         // For now, keep others as Blade or update them later
         if ($user->hasRole('super_agent') || $user->hasRole('agent')) {
             return $this->agentDashboard($user);
@@ -34,19 +42,66 @@ class DashboardController extends Controller
         return $this->customerDashboard($user);
     }
 
+    private function visaAdminDashboard($user): Response
+    {
+        $applications = \App\Models\VisaApplication::with(['assignedAgent:id,name'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $stats = [
+            ['title' => 'Total Applications', 'value' => $applications->count(), 'color' => 'blue', 'icon' => 'total'],
+            ['title' => 'Pending', 'value' => $applications->where('status', 'pending')->count(), 'color' => 'orange', 'icon' => 'pending'],
+            ['title' => 'In Progress', 'value' => $applications->whereIn('status', ['processing', 'assigned'])->count(), 'color' => 'purple', 'icon' => 'progress'],
+            ['title' => 'Approved', 'value' => $applications->where('status', 'approved')->count(), 'color' => 'green', 'icon' => 'completed'],
+        ];
+
+        $agents = User::role(['visa_agent', 'visa_admin'])->get(['id', 'name']);
+
+        return Inertia::render('Admin/Visa/Dashboard', [
+            'applications' => $applications,
+            'stats' => $stats,
+            'agents' => $agents,
+        ]);
+    }
+
+    private function visaAgentDashboard($user): Response
+    {
+        $applications = \App\Models\VisaApplication::where('assigned_agent_id', $user->id)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $stats = [
+            ['title' => 'Assigned to Me', 'value' => $applications->count(), 'color' => 'blue'],
+            ['title' => 'Pending', 'value' => $applications->whereIn('status', ['pending', 'assigned'])->count(), 'color' => 'orange'],
+            ['title' => 'Processing', 'value' => $applications->where('status', 'processing')->count(), 'color' => 'purple'],
+            ['title' => 'Completed', 'value' => $applications->whereIn('status', ['approved', 'rejected'])->count(), 'color' => 'green'],
+        ];
+
+        return Inertia::render('Agent/Visa/Dashboard', [
+            'applications' => $applications,
+            'stats' => $stats,
+        ]);
+    }
+
     private function adminDashboard($user): Response
     {
         // RFQ Statistics
-        $totalRfqs = Rfq::count();
-        $pendingRfqs = Rfq::where('status', 'pending')->count();
-        $completedRfqs = Rfq::where('status', 'completed')->count();
-        $inProgressRfqs = Rfq::whereIn('status', ['assigned', 'sourcing', 'purchased', 'shipped'])->count();
+        $totalRfqs      = Rfq::count();
+        $completedRfqs  = Rfq::where('status', 'completed')->count();
+        $inProgressRfqs = Rfq::whereIn('status', [
+            'sourcing', 'quoted', 'awaiting_payment', 'payment_received', 'purchased', 'shipped'
+        ])->count();
+        $pendingRfqs    = Rfq::whereIn('status', [
+            'pending', 'assigned', 'queued'
+        ])->count();
+        $awaitingFeeRfqs = Rfq::where('status', 'commitment_fee_pending')->count();
+        $notFoundRfqs   = Rfq::where('status', 'not_found')->count();
 
         // Financial Statistics
         $totalInvoices = Invoice::count();
-        $totalInvoiceAmount = Invoice::sum('total') ?? 0;
-        $paidAmount = Payment::sum('amount') ?? 0;
-        $pendingPayments = Invoice::sum('balance_due') ?? 0;
+        $totalInvoiceAmount = (float)(Invoice::sum('total') ?? 0);
+        $paidAmount = (float)(Payment::sum('amount') ?? 0) + (float)(\App\Models\Transaction::where('status', 'successful')->sum('amount') ?? 0);
+        $pendingPayments = (float)(Invoice::sum('balance_due') ?? 0);
         $totalEstimates = Estimate::count();
 
         // User Statistics
@@ -80,7 +135,7 @@ class DashboardController extends Controller
             [
                 'title' => 'Active Agents',
                 'value' => $totalAgents,
-                'change' => $this->calculateMonthlyChange(User::class),
+                'change' => $this->calculateMonthlyAgentChange(),
                 'icon' => 'agents',
                 'color' => 'purple'
             ]
@@ -91,17 +146,18 @@ class DashboardController extends Controller
         $data = [];
         $colors = [];
         $colorMap = [
+            'commitment_fee_pending' => '#8B5CF6',
             'pending' => '#FF6B6B',
+            'queued' => '#FF8C00',
             'assigned' => '#FFA500',
             'sourcing' => '#4ECDC4',
-            'purchased' => '#45B7D1',
-            'shipped' => '#96CEB4',
-            'completed' => '#6BCB77',
-            'queued' => '#FF8C00',
-            'not_found' => '#D32F2F',
             'quoted' => '#03A9F4',
             'awaiting_payment' => '#FFC107',
             'payment_received' => '#4CAF50',
+            'purchased' => '#45B7D1',
+            'shipped' => '#96CEB4',
+            'completed' => '#6BCB77',
+            'not_found' => '#D32F2F',
         ];
 
         foreach (\App\Enums\RfqStatusEnum::cases() as $status) {
@@ -159,12 +215,12 @@ class DashboardController extends Controller
                     'customer' => $invoice->customer?->name ?? 'Unknown',
                     'amount' => env('APP_CURRENCY_SYMBOL', '₦') . number_format((float)$invoice->total, 0),
                     'status' => $invoice->status->value,
-                    'due_date' => $invoice->due_date->format('M d, Y'),
+                    'due_date' => $invoice->due_date ? $invoice->due_date->format('M d, Y') : 'N/A',
                     'product' => $invoice->rfq?->product_name ?? 'N/A'
                 ];
             });
 
-        // Summary Stats
+        // Summary Stats (complete breakdown covering 100% of pipeline)
         $summaryStats = [
             [
                 'label' => 'Total RFQs',
@@ -172,19 +228,29 @@ class DashboardController extends Controller
                 'percentage' => 100,
             ],
             [
+                'label' => 'In Progress (Active)',
+                'value' => $inProgressRfqs,
+                'percentage' => $totalRfqs > 0 ? round(($inProgressRfqs / $totalRfqs) * 100, 1) : 0,
+            ],
+            [
+                'label' => 'Pending / Queued',
+                'value' => $pendingRfqs,
+                'percentage' => $totalRfqs > 0 ? round(($pendingRfqs / $totalRfqs) * 100, 1) : 0,
+            ],
+            [
+                'label' => 'Awaiting Commitment Fee',
+                'value' => $awaitingFeeRfqs,
+                'percentage' => $totalRfqs > 0 ? round(($awaitingFeeRfqs / $totalRfqs) * 100, 1) : 0,
+            ],
+            [
                 'label' => 'Completed',
                 'value' => $completedRfqs,
                 'percentage' => $totalRfqs > 0 ? round(($completedRfqs / $totalRfqs) * 100, 1) : 0,
             ],
             [
-                'label' => 'In Progress',
-                'value' => $inProgressRfqs,
-                'percentage' => $totalRfqs > 0 ? round(($inProgressRfqs / $totalRfqs) * 100, 1) : 0,
-            ],
-            [
-                'label' => 'Pending',
-                'value' => $pendingRfqs,
-                'percentage' => $totalRfqs > 0 ? round(($pendingRfqs / $totalRfqs) * 100, 1) : 0,
+                'label' => 'Not Found / Closed',
+                'value' => $notFoundRfqs,
+                'percentage' => $totalRfqs > 0 ? round(($notFoundRfqs / $totalRfqs) * 100, 1) : 0,
             ]
         ];
 
@@ -223,23 +289,99 @@ class DashboardController extends Controller
             });
 
         // System health score calculation
-        $completionRate = $totalRfqs > 0 ? round(($completedRfqs / $totalRfqs) * 100, 1) : 0;
+        $resolvedRfqs = $completedRfqs + $notFoundRfqs;
+        $fulfillmentRate = $resolvedRfqs > 0 ? round(($completedRfqs / $resolvedRfqs) * 100, 1) : 0;
         $paymentCompletionRate = $totalInvoiceAmount > 0 ? round(($paidAmount / $totalInvoiceAmount) * 100, 1) : 0;
-        $systemHealth = round(($completionRate + $paymentCompletionRate) / 2, 1);
+        $systemHealth = round(($fulfillmentRate * 0.5) + ($paymentCompletionRate * 0.5), 1);
 
-        // Agent Activities
+        // Agent Activities - ordered by recent activity with real response times
         $agentActivities = User::role(['agent', 'super_agent'])
+            ->with(['assignedRfqs' => function($q) {
+                $q->select('id', 'assigned_agent_id', 'status', 'created_at', 'updated_at');
+            }])
             ->withCount(['assignedRfqs as completed_rfqs' => function($q) {
                 $q->where('status', 'completed');
             }])
-            ->limit(5)
             ->get()
+            ->sortByDesc(function($agent) {
+                return $agent->last_login_at 
+                    ? Carbon::parse($agent->last_login_at)->timestamp 
+                    : ($agent->assignedRfqs->max('updated_at')?->timestamp ?? 0);
+            })
+            ->take(5)
+            ->values()
             ->map(function($agent) {
+                $rfqs = $agent->assignedRfqs;
+                $lastActivity = $agent->last_login_at 
+                    ? Carbon::parse($agent->last_login_at) 
+                    : $rfqs->sortByDesc('updated_at')->first()?->updated_at;
+
+                $actedRfqs = $rfqs->filter(
+                    fn($r) => !in_array($r->status->value, ['pending', 'assigned', 'queued'])
+                              && $r->updated_at->gt($r->created_at)
+                );
+                if ($actedRfqs->isNotEmpty()) {
+                    $totalMinutes = $actedRfqs->sum(
+                        fn($r) => (int) $r->created_at->diffInMinutes($r->updated_at)
+                    );
+                    $avgMinutes = (int) round($totalMinutes / $actedRfqs->count());
+                    if ($avgMinutes < 60) {
+                        $avgResponseLabel = $avgMinutes . 'm';
+                    } elseif ($avgMinutes < 1440) {
+                        $avgResponseLabel = round($avgMinutes / 60, 1) . 'h';
+                    } else {
+                        $avgResponseLabel = round($avgMinutes / 1440, 1) . 'd';
+                    }
+                } else {
+                    $avgResponseLabel = 'N/A';
+                }
+
                 return [
                     'name' => $agent->name,
-                    'last_login_at' => $agent->last_login_at ? Carbon::parse($agent->last_login_at)->diffForHumans() : 'Never',
-                    'avg_response_time' => $agent->avg_response_time ? $agent->avg_response_time . ' mins' : 'N/A',
+                    'last_login_at' => $lastActivity ? $lastActivity->diffForHumans() : 'Never',
+                    'avg_response_time' => $avgResponseLabel,
                     'completed_rfqs' => $agent->completed_rfqs
+                ];
+            });
+
+        // Agent Tasks & Scheduled Talks (monday.com overview for super admin)
+        $tasksQuery = \App\Models\Task::with('assignedAgent:id,name');
+        $agentTasksStats = [
+            'total'       => (clone $tasksQuery)->count(),
+            'talks'       => (clone $tasksQuery)->where('type', 'talk')->count(),
+            'in_progress' => (clone $tasksQuery)->where('status', 'in_progress')->count(),
+            'done'        => (clone $tasksQuery)->where('status', 'done')->count(),
+            'overdue'     => (clone $tasksQuery)->where('due_at', '<', now())->where('status', '!=', 'done')->count(),
+        ];
+
+        $agentTasks = (clone $tasksQuery)
+            ->orderByRaw("CASE WHEN status = 'done' THEN 2 ELSE 1 END")
+            ->orderByRaw("CASE WHEN due_at IS NULL THEN 1 ELSE 0 END, due_at ASC")
+            ->limit(8)
+            ->get()
+            ->map(function ($task) {
+                $isOverdue = $task->due_at && $task->due_at->isPast() && $task->status !== 'done';
+                $dueLabel = 'No due date';
+                if ($task->due_at) {
+                    if ($task->due_at->isToday()) {
+                        $dueLabel = 'Today ' . $task->due_at->format('h:i A');
+                    } elseif ($task->due_at->isTomorrow()) {
+                        $dueLabel = 'Tomorrow ' . $task->due_at->format('h:i A');
+                    } else {
+                        $dueLabel = $task->due_at->format('M d, h:i A');
+                    }
+                }
+
+                return [
+                    'id'                  => $task->id,
+                    'title'               => $task->title,
+                    'type'                => $task->type,
+                    'status'              => $task->status,
+                    'priority'            => $task->priority,
+                    'contact_name'        => $task->contact_name,
+                    'due_label'           => $dueLabel,
+                    'is_overdue'          => $isOverdue,
+                    'assigned_agent_name' => $task->assignedAgent?->name ?? 'Unassigned',
                 ];
             });
 
@@ -253,10 +395,12 @@ class DashboardController extends Controller
             'monthlyRevenue' => $monthlyRevenue,
             'topAgents' => $topAgents,
             'agentActivities' => $agentActivities,
+            'agentTasks' => $agentTasks,
+            'agentTasksStats' => $agentTasksStats,
             'categoryBreakdown' => $categoryBreakdown,
             'systemHealth' => [
                 'score' => $systemHealth,
-                'completionRate' => $completionRate,
+                'completionRate' => $fulfillmentRate,
                 'paymentRate' => $paymentCompletionRate,
                 'status' => $systemHealth >= 75 ? 'Excellent' : ($systemHealth >= 50 ? 'Good' : 'Needs Improvement')
             ],
@@ -298,17 +442,53 @@ class DashboardController extends Controller
     }
 
     /**
-     * Calculate monthly payment change
+     * Calculate monthly change percentage for agents
+     */
+    private function calculateMonthlyAgentChange(): string
+    {
+        $currentMonth = User::role(['agent', 'super_agent'])
+            ->whereYear('created_at', Carbon::now()->year)
+            ->whereMonth('created_at', Carbon::now()->month)
+            ->count();
+
+        $lastMonth = User::role(['agent', 'super_agent'])
+            ->whereYear('created_at', Carbon::now()->subMonth()->year)
+            ->whereMonth('created_at', Carbon::now()->subMonth()->month)
+            ->count();
+
+        if ($lastMonth == 0) {
+            return $currentMonth > 0 ? '+100%' : '0%';
+        }
+
+        $change = (($currentMonth - $lastMonth) / $lastMonth) * 100;
+        $symbol = $change >= 0 ? '+' : '';
+        return $symbol . round($change, 1) . '%';
+    }
+
+    /**
+     * Calculate monthly payment change (including online gateway transactions)
      */
     private function calculateMonthlyPaymentChange(): string
     {
-        $currentMonth = Payment::whereYear('paid_at', Carbon::now()->year)
-            ->whereMonth('paid_at', Carbon::now()->month)
+        $now = Carbon::now();
+        $currentPayments = Payment::whereYear('paid_at', $now->year)
+            ->whereMonth('paid_at', $now->month)
             ->sum('amount') ?? 0;
+        $currentTransactions = \App\Models\Transaction::where('status', 'successful')
+            ->whereYear('created_at', $now->year)
+            ->whereMonth('created_at', $now->month)
+            ->sum('amount') ?? 0;
+        $currentMonth = $currentPayments + $currentTransactions;
 
-        $lastMonth = Payment::whereYear('paid_at', Carbon::now()->subMonth()->year)
-            ->whereMonth('paid_at', Carbon::now()->subMonth()->month)
+        $lastMonthDate = $now->copy()->subMonth();
+        $lastPayments = Payment::whereYear('paid_at', $lastMonthDate->year)
+            ->whereMonth('paid_at', $lastMonthDate->month)
             ->sum('amount') ?? 0;
+        $lastTransactions = \App\Models\Transaction::where('status', 'successful')
+            ->whereYear('created_at', $lastMonthDate->year)
+            ->whereMonth('created_at', $lastMonthDate->month)
+            ->sum('amount') ?? 0;
+        $lastMonth = $lastPayments + $lastTransactions;
 
         if ($lastMonth == 0) {
             return $currentMonth > 0 ? '+100%' : '0%';
@@ -376,10 +556,18 @@ class DashboardController extends Controller
         for ($i = 11; $i >= 0; $i--) {
             $date = Carbon::now()->subMonths($i);
             $months[] = $date->format('M');
-            $revenue = Payment::whereYear('paid_at', $date->year)
+            
+            $payments = Payment::whereYear('paid_at', $date->year)
                 ->whereMonth('paid_at', $date->month)
                 ->sum('amount') ?? 0;
-            $data[] = round($revenue, 2);
+
+            $transactions = \App\Models\Transaction::where('status', 'successful')
+                ->whereYear('created_at', $date->year)
+                ->whereMonth('created_at', $date->month)
+                ->sum('amount') ?? 0;
+
+            $revenue = $payments + $transactions;
+            $data[] = round((float)$revenue, 2);
         }
 
         return [

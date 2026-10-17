@@ -1,11 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Request a Quote — Elbildad Services</title>
+@extends('layouts.frontend')
+
+@section('title', 'Request a Quote — Elbildad Services')
+
+@section('head')
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * { font-family: 'Inter', sans-serif; }
         body { background: #f1f5f9; }
@@ -72,24 +70,10 @@
         .badge { display: inline-block; font-size: 0.68rem; background: #dbeafe; color: #1d4ed8; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 999px; margin-left: 6px; vertical-align: middle; }
         .badge-opt { background: #f1f5f9; color: #64748b; }
     </style>
-</head>
-<body class="min-h-screen py-12 px-4">
+@endsection
 
-    {{-- Top nav --}}
-    <header class="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur border-b border-gray-100 h-16 flex items-center px-6">
-        <a href="{{ url('/') }}" class="flex items-center gap-2">
-            <img src="/images/logo/elbildad-logo.png" alt="Elbildad" class="h-9 w-auto object-contain">
-            <div class="leading-none">
-                <span class="block text-xl font-bold text-slate-800 tracking-tight">Elbildad</span>
-                <span class="block text-[10px] font-semibold text-blue-600 uppercase tracking-widest">Services</span>
-            </div>
-        </a>
-        <div class="ml-auto">
-            <a href="{{ route('login') }}" class="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors">Sign In</a>
-        </div>
-    </header>
-
-    <div class="pt-24 max-w-2xl mx-auto">
+@section('content')
+    <div class="pt-24 pb-12 px-4 max-w-2xl mx-auto">
 
         {{-- Validation errors --}}
         @if ($errors->any())
@@ -109,7 +93,7 @@
         <div class="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
 
             {{-- Header --}}
-            <div class="bg-gradient-to-r from-blue-700 to-blue-500 px-8 py-8 text-white">
+            <div class="px-8 py-8 text-white" style="background: linear-gradient(to right, #1d4ed8, #3b82f6);">
                 <h1 class="text-2xl md:text-3xl font-bold mb-1">Submit Your Sourcing Request</h1>
                 <p class="opacity-85 text-sm">Get factory prices from China to Nigeria — we handle everything.</p>
             </div>
@@ -265,11 +249,11 @@
                 </a>
             </div>
         </div>
-
-        <p class="text-center text-slate-400 text-xs mt-6">
-            © {{ date('Y') }} Elbildad Services Ltd · <a href="{{ url('/') }}" class="hover:text-slate-600">Home</a>
-        </p>
+        <div class="text-center mt-6 mb-12">
+            <a href="{{ url('/') }}" class="text-slate-500 hover:text-slate-800 text-sm font-semibold transition-colors">← Back to Home</a>
+        </div>
     </div>
+
 
     <script>
         document.getElementById('rfq-form').addEventListener('submit', function(e) {
@@ -346,5 +330,4 @@
             }
         }
     </script>
-</body>
-</html>
+@endsection

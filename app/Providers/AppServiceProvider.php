@@ -34,5 +34,14 @@ class AppServiceProvider extends ServiceProvider
         // Register Zoho Sync Observers
         User::observe(UserObserver::class);
         Item::observe(ItemObserver::class);
+
+        // Track last login for all authentication methods (regular login, remember me, etc.)
+        \Illuminate\Support\Facades\Event::listen(\Illuminate\Auth\Events\Login::class, function (\Illuminate\Auth\Events\Login $event) {
+            if ($event->user) {
+                $event->user->forceFill([
+                    'last_login_at' => now(),
+                ])->saveQuietly();
+            }
+        });
     }
 }

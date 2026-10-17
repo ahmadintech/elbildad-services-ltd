@@ -1,6 +1,6 @@
 <template>
-  <div class="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
-    <h3 class="mb-6 text-lg font-semibold text-gray-900 dark:text-white/90">{{ title }}</h3>
+  <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-white/[0.03]">
+    <h3 class="mb-6 text-xl font-bold tracking-tight text-gray-900 dark:text-white">{{ title }}</h3>
     
     <div class="overflow-x-auto custom-scrollbar">
       <VueApexCharts type="area" height="320" :options="chartOptions" :series="series" />
@@ -38,13 +38,13 @@ const series = computed(() => [
   }
 ])
 
-const chartOptions = ref({
+const chartOptions = computed(() => ({
   legend: {
     show: false,
     position: 'top',
     horizontalAlign: 'left',
   },
-  colors: ['#3B82F6'],
+  colors: [props.color || '#3B82F6'],
   chart: {
     fontFamily: 'Outfit, sans-serif',
     type: 'area',
@@ -107,13 +107,5 @@ const chartOptions = ref({
       },
     },
   },
-})
-
-watch(() => props.labels, () => {
-  chartOptions.value.xaxis.categories = props.labels
-}, { deep: true })
-
-watch(() => props.color, (newColor) => {
-  chartOptions.value.colors = [newColor]
-})
+}))
 </script>

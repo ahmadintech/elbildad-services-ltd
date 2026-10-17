@@ -1,26 +1,26 @@
 <template>
-  <div class="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
-    <h3 class="mb-6 text-lg font-semibold text-gray-900 dark:text-white/90">{{ title }}</h3>
+  <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-white/[0.03]">
+    <h3 class="mb-6 text-xl font-bold tracking-tight text-gray-900 dark:text-white">{{ title }}</h3>
     
     <div class="flex items-center justify-center">
       <VueApexCharts type="donut" height="300" :options="chartOptions" :series="series" />
     </div>
 
     <!-- Legend -->
-    <div class="mt-6 space-y-2">
+    <div class="mt-6 space-y-2.5">
       <div
         v-for="(label, index) in labels"
         :key="index"
-        class="flex items-center justify-between"
+        class="flex items-center justify-between py-1 border-b border-gray-100 last:border-b-0 dark:border-gray-800/60"
       >
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2.5">
           <div
             :style="{ backgroundColor: colors[index] }"
-            class="h-3 w-3 rounded-full"
+            class="h-3.5 w-3.5 rounded-full shadow-xs"
           ></div>
-          <span class="text-sm text-gray-600 dark:text-gray-400">{{ label }}</span>
+          <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ label }}</span>
         </div>
-        <span class="font-semibold text-gray-900 dark:text-white/90">{{ data[index] }}</span>
+        <span class="text-sm font-black text-gray-900 dark:text-white">{{ data[index] }}</span>
       </div>
     </div>
   </div>
@@ -51,7 +51,7 @@ const props = defineProps({
 
 const series = computed(() => props.data)
 
-const chartOptions = ref({
+const chartOptions = computed(() => ({
   labels: props.labels,
   colors: props.colors,
   chart: {
@@ -82,5 +82,5 @@ const chartOptions = ref({
   dataLabels: {
     enabled: false,
   },
-})
+}))
 </script>

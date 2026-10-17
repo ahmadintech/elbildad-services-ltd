@@ -1,5 +1,6 @@
 {{-- Redesigned Footer Partial --}}
 <style>
+
   /* ===== MOBILE MENU FIX =====
      The header has a scroll-handler that modifies classes/opacity.
      We force the drawer to have solid bg, stay on top, and full height. */
@@ -20,6 +21,11 @@
     opacity: 1 !important;
     height: 100vh !important;
     max-height: 100vh !important;
+  }
+
+  /* Hide React's built-in footer when our custom footer is present */
+  footer:not(#elbildad-footer) {
+    display: none !important;
   }
 
   /* ===== FOOTER REDESIGN ===== */
@@ -324,12 +330,12 @@
     font-weight: 600;
     margin-top: 8px;
   }
+
 </style>
 
 <footer id="elbildad-footer">
   <div class="footer-top">
     <div class="footer-inner">
-
       <!-- Brand Column -->
       <div>
         <a href="/" class="footer-brand-logo">
@@ -349,11 +355,11 @@
             </a>
           </li>
           <li>
-            <a href="mailto:info@elbildad.com" class="footer-contact-item">
+            <a href="mailto:support@elbildad.ng" class="footer-contact-item">
               <span class="footer-contact-icon email">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
               </span>
-              info@elbildad.com
+              support@elbildad.ng
             </a>
           </li>
         </ul>
@@ -362,18 +368,17 @@
           <a href="https://wa.me/2348032775756" class="footer-social-link" target="_blank" aria-label="WhatsApp">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
           </a>
-          <a href="mailto:info@elbildad.com" class="footer-social-link" aria-label="Email">
+          <a href="mailto:support@elbildad.ng" class="footer-social-link" aria-label="Email">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
           </a>
-          <a href="https://www.linkedin.com/company/elbildad" class="footer-social-link" target="_blank" aria-label="LinkedIn">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.79M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/></svg>
+          <a href="https://web.facebook.com/theelbildadservices" class="footer-social-link" target="_blank" aria-label="Facebook">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z"/></svg>
           </a>
-          <a href="https://www.facebook.com/elbildad" class="footer-social-link" target="_blank" aria-label="Facebook">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+          <a href="#" class="footer-social-link" target="_blank" aria-label="LinkedIn">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
           </a>
         </div>
       </div>
-
       <!-- Quick Links -->
       <div>
         <p class="footer-col-title">Quick Links</p>
@@ -381,11 +386,10 @@
           <li><a href="/">Home</a></li>
           <li><a href="/contact">Contact Us</a></li>
           <li><a href="/rfq">Request Quote</a></li>
+          <li><a href="/visa-application">Apply for Visa</a></li>
           <li><a href="/signin">Sign In</a></li>
-          <li><a href="/signup">Create Account</a></li>
         </ul>
       </div>
-
       <!-- Services -->
       <div>
         <p class="footer-col-title">Our Services</p>
@@ -393,11 +397,9 @@
           <li><a href="/rfq">Product Sourcing</a></li>
           <li><a href="/rfq">Factory Inspection</a></li>
           <li><a href="/rfq">Freight & Logistics</a></li>
-          <li><a href="/rfq">Quality Control</a></li>
-          <li><a href="/rfq">Trade Financing</a></li>
+          <li><a href="/visa-application">Visa & Study in China</a></li>
         </ul>
       </div>
-
       <!-- Newsletter -->
       <div>
         <div class="footer-newsletter-box">
@@ -406,186 +408,34 @@
             Stay Updated
           </p>
           <p class="footer-newsletter-desc">Get the latest sourcing tips, trade news, and exclusive deals from China delivered to your inbox.</p>
-
-          <form class="footer-newsletter-form" id="footer-newsletter-form" onsubmit="handleNewsletterSubmit(event)">
+          <form class="footer-newsletter-form" onsubmit="event.preventDefault(); this.querySelector('.footer-newsletter-btn').innerHTML='Subscribing...'; setTimeout(() => { this.innerHTML='<div style=\'display:flex;align-items:center;gap:10px;color:#4ade80;font-weight:600;\'>Thanks for subscribing!</div>'; }, 1000);">
             <div class="footer-newsletter-input-wrap">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
-              <input
-                type="email"
-                class="footer-newsletter-input"
-                id="footer-newsletter-email"
-                placeholder="Enter your email address"
-                required
-              />
+              <input type="email" class="footer-newsletter-input" placeholder="Enter your email address" required />
             </div>
-            <button type="submit" class="footer-newsletter-btn" id="footer-newsletter-btn">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+            <button type="submit" id="footer-newsletter-btn" class="footer-newsletter-btn">
               Subscribe Now
             </button>
-            <div class="footer-newsletter-success" id="footer-newsletter-success">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-              You're subscribed! Thank you.
+            <div id="footer-newsletter-success" class="footer-newsletter-success">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+              Thanks for subscribing!
             </div>
           </form>
         </div>
       </div>
-
     </div>
   </div>
-
   <!-- Bottom bar -->
   <div style="border-top: 1px solid rgba(255,255,255,0.05); position:relative; z-index:2;">
     <div class="footer-bottom">
       <p class="footer-copyright">
-        &copy; <span id="footer-year"></span> <a href="/">Elbildad Services Ltd</a>. All rights reserved.
+        &copy; {{ date("Y") }} <a href="/">Elbildad Services Ltd</a>. All rights reserved.
       </p>
       <div class="footer-bottom-links">
-        <a href="#">Privacy Policy</a>
-        <a href="#">Terms of Service</a>
+        <a href="/privacy">Privacy Policy</a>
+        <a href="/terms">Terms of Service</a>
         <a href="/contact">Support</a>
       </div>
     </div>
   </div>
 </footer>
-
-<script>
-  // Set current year
-  document.getElementById('footer-year').textContent = new Date().getFullYear();
-
-  // Newsletter submit
-  function handleNewsletterSubmit(e) {
-    e.preventDefault();
-    const btn = document.getElementById('footer-newsletter-btn');
-    const success = document.getElementById('footer-newsletter-success');
-
-    btn.disabled = true;
-    btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg> Subscribing...';
-
-    setTimeout(() => {
-      document.querySelector('.footer-newsletter-input-wrap').style.display = 'none';
-      btn.style.display = 'none';
-      success.style.display = 'flex';
-    }, 1000);
-  }
-
-  // ---- MutationObserver-based footer replacement ----
-  // Hide React's footer immediately via CSS
-  var style = document.createElement('style');
-  style.textContent = 'footer:not(#elbildad-footer) { display: none !important; }';
-  document.head.appendChild(style);
-
-  var ourFooter = document.getElementById('elbildad-footer');
-  ourFooter.style.display = 'block'; // ensure ours is always visible
-
-  function ensureFooterPlaced() {
-    // Make sure our footer is the last element in the main content
-    var existing = document.getElementById('elbildad-footer');
-    if (!existing) return;
-    // If it's hidden inside a React wrapper that React removed, re-append it to body
-    if (!document.body.contains(existing)) {
-      document.body.appendChild(existing);
-    }
-    existing.style.display = 'block';
-  }
-
-  // Run on DOMContentLoaded
-  document.addEventListener('DOMContentLoaded', ensureFooterPlaced);
-
-  // Use MutationObserver to catch when React finishes hydrating
-  var observer = new MutationObserver(function() {
-    ensureFooterPlaced();
-  });
-
-  observer.observe(document.body, { childList: true, subtree: true });
-
-  // Stop observing after 10 seconds
-  setTimeout(function() { observer.disconnect(); }, 10000);
-
-  // ---- Mobile Menu Fix ----
-  // React's scroll handler changes header opacity, making the drawer transparent.
-  // We continuously enforce styles and ensure the drawer is visible and opaque.
-  (function() {
-    var menuOpen = false;
-    var enforceInt = null;
-
-    function getDrawer() {
-      return document.querySelector('header div[class*="max-w-xs"]')
-          || document.querySelector('header .lg\\:hidden.fixed')
-          || document.getElementById('elbildad-mobile-drawer');
-    }
-
-    var COMMON_STYLES = {
-      position: 'fixed', top: '0', right: '0',
-      height: '100vh', width: '100%', maxWidth: '320px',
-      backgroundColor: '#ffffff', opacity: '1', zIndex: '10000',
-      display: 'flex', flexDirection: 'column',
-    };
-
-    function enforceDrawerStyles() {
-      var drawer = getDrawer();
-      if (!drawer) return;
-
-      // Check if it's open based on transform or React classes
-      var style = window.getComputedStyle(drawer);
-      var transform = style.transform || style.webkitTransform;
-      var isOpen = (transform === 'none' || transform.indexOf('matrix(1, 0, 0, 1, 0, 0)') !== -1);
-      
-      // If we can't tell from transform, check if it doesn't have translate-x-full
-      if (drawer.classList.contains('translate-x-0')) isOpen = true;
-      if (drawer.classList.contains('translate-x-full')) isOpen = false;
-
-      Object.keys(COMMON_STYLES).forEach(function(k) {
-        drawer.style[k] = COMMON_STYLES[k];
-      });
-
-      if (isOpen) {
-        drawer.style.transform = 'translateX(0)';
-        drawer.style.boxShadow = '-4px 0 32px rgba(0,0,0,0.25)';
-        // Also force parent header to be opaque
-        var header = drawer.closest('header');
-        if (header) {
-          header.style.opacity = '1';
-          header.style.backdropFilter = 'none';
-          header.style.backgroundColor = '#ffffff';
-        }
-      } else {
-        drawer.style.transform = 'translateX(100%)';
-        drawer.style.boxShadow = 'none';
-      }
-    }
-
-    function bindButtons() {
-      var openBtn  = document.querySelector('header button[aria-label="Toggle mobile menu"]');
-      var closeBtn = document.querySelector('header button[aria-label="Close mobile menu"]') || 
-                     (getDrawer() ? getDrawer().querySelector('button[aria-label="Close mobile menu"]') : null);
-
-      if (openBtn && !openBtn._elbildadBound) {
-        openBtn._elbildadBound = true;
-        openBtn.addEventListener('click', function() {
-          setTimeout(enforceDrawerStyles, 50);
-          if (!enforceInt) enforceInt = setInterval(enforceDrawerStyles, 100);
-        });
-      }
-
-      if (closeBtn && !closeBtn._elbildadBound) {
-        closeBtn._elbildadBound = true;
-        closeBtn.addEventListener('click', function() {
-          setTimeout(enforceDrawerStyles, 50);
-        });
-      }
-    }
-
-    function init() {
-      enforceDrawerStyles();
-      bindButtons();
-    }
-
-    document.addEventListener('DOMContentLoaded', init);
-    if (document.readyState !== 'loading') init();
-
-    // Run periodically to catch React changes
-    setInterval(init, 1000);
-    // Also run on scroll
-    window.addEventListener('scroll', enforceDrawerStyles, { passive: true });
-  })();
-</script>

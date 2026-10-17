@@ -10,6 +10,10 @@
       <div class="p-4 mx-auto max-w-(--breakpoint-2xl) md:p-6">
         <slot></slot>
       </div>
+
+      <!-- Global Task & Talk Reminders with Desktop Alerts & Melodic Chime -->
+      <GlobalTaskReminder />
+
       <!-- Footer -->
       <footer class="p-4 mx-auto max-w-(--breakpoint-2xl) md:p-6 pt-0">
         <p class="text-sm text-center text-gray-500 dark:text-gray-400">
@@ -31,6 +35,7 @@ import { useSidebar } from '@/composables/useSidebar'
 import AppHeader from './AppHeader.vue'
 import AppSidebar from './AppSidebar.vue'
 import Backdrop from './Backdrop.vue'
+import GlobalTaskReminder from '@/components/tasks/GlobalTaskReminder.vue'
 import { watch } from 'vue'
 import { usePage } from '@inertiajs/vue3'
 import { toast } from 'vue3-toastify'

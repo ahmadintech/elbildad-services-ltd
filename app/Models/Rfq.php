@@ -53,4 +53,14 @@ class Rfq extends AbstractModel
     {
         return $this->hasMany(AgentRfqAssignment::class);
     }
+
+    public function transactions(): HasMany
+    {
+        return $this->hasMany(\App\Models\Transaction::class);
+    }
+
+    public function expenses(): HasMany
+    {
+        return $this->hasMany(Expense::class);
+    }
 }

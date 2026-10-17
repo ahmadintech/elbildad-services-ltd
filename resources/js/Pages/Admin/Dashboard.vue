@@ -60,9 +60,13 @@
           />
         </div>
 
-        <!-- Agent Activities -->
-        <div class="col-span-12 lg:col-span-5">
+        <!-- Agent Activities & Tasks Overview -->
+        <div class="col-span-12 lg:col-span-6">
           <AgentActivities :activities="agentActivities" />
+        </div>
+
+        <div class="col-span-12 lg:col-span-6">
+          <AgentTasksOverview :tasks="agentTasks" :stats="agentTasksStats" />
         </div>
 
         <!-- Recent RFQs -->
@@ -97,6 +101,7 @@ import RecentRfqs from '@/components/dashboard/RecentRfqs.vue'
 import FinancialOverview from '@/components/dashboard/FinancialOverview.vue'
 import TeamPerformance from '@/components/dashboard/TeamPerformance.vue'
 import AgentActivities from '@/components/dashboard/AgentActivities.vue'
+import AgentTasksOverview from '@/components/dashboard/AgentTasksOverview.vue'
 import { Head } from '@inertiajs/vue3'
 
 defineProps({
@@ -109,6 +114,8 @@ defineProps({
   monthlyRevenue: Object,
   topAgents: Array,
   agentActivities: Array,
+  agentTasks: Array,
+  agentTasksStats: Object,
   categoryBreakdown: Array,
   systemHealth: Object,
   totalStats: Object

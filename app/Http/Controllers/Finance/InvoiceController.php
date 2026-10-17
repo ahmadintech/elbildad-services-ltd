@@ -143,8 +143,32 @@ class InvoiceController extends Controller
         return Redirect::route('finance.invoices.index')->with('success', 'Invoice created successfully.');
     }
 
+    private function authorizeInvoiceAccess(Invoice $invoice): void
+    {
+        $user = auth()->user();
+        if ($user->hasRole(['owner', 'admin'])) return;
+
+        if ($user->hasRole(['agent', 'super_agent'])) {
+            $authorized = false;
+            if ($invoice->rfq_id) {
+                $invoice->loadMissing('rfq');
+                $authorized = $invoice->rfq->assigned_agent_id === $user->id;
+            } else {
+                $authorized = \App\Models\Rfq::where('assigned_agent_id', $user->id)
+                    ->where('customer_id', $invoice->customer_id)
+                    ->exists();
+            }
+            if (!$authorized) abort(403, 'Unauthorized access to this invoice.');
+        } elseif ($user->hasRole('customer')) {
+            if ($invoice->customer_id !== $user->id) abort(403, 'Unauthorized access to this invoice.');
+        } else {
+            abort(403);
+        }
+    }
+
     public function show(Invoice $invoice)
     {
+        $this->authorizeInvoiceAccess($invoice);
         $invoice->load(['rfq', 'estimate', 'customer', 'payments']);
         try {
             $zohoData = $this->invoiceService->getInvoice($invoice->zoho_invoice_id);
@@ -167,6 +191,7 @@ class InvoiceController extends Controller
 
     public function downloadPdf(Invoice $invoice)
     {
+        $this->authorizeInvoiceAccess($invoice);
         try {
             $pdfContent = $this->invoiceService->getInvoicePdf($invoice->zoho_invoice_id);
             return response($pdfContent, 200, [
@@ -180,6 +205,7 @@ class InvoiceController extends Controller
 
     public function send(Invoice $invoice): RedirectResponse
     {
+        $this->authorizeInvoiceAccess($invoice);
         $this->invoiceService->sendInvoice($invoice->zoho_invoice_id);
 
         return Redirect::back()->with('success', 'Invoice sent and emailed to customer.');

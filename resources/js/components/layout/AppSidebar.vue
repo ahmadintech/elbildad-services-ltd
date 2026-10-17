@@ -186,7 +186,9 @@ import {
   PlugInIcon,
   DocsIcon,
   PageIcon,
-  BarChartIcon
+  BarChartIcon,
+  PieChartIcon,
+  TaskIcon
 } from "../../icons";
 import { useSidebar } from "@/composables/useSidebar";
 
@@ -199,22 +201,46 @@ const hasRole = (roles) => {
 };
 
 const menuGroups = computed(() => {
+  const mainItems = [
+    {
+      icon: GridIcon,
+      name: "Dashboard",
+      path: "/dashboard",
+    },
+  ];
+
+  if (hasRole(["admin", "owner", "agent", "super_agent"])) {
+    mainItems.push({
+      icon: TaskIcon,
+      name: "Tasks & Schedule",
+      path: "/tasks",
+    });
+  }
+
+  mainItems.push({
+    icon: BoxCubeIcon,
+    name: "New Sourcing Request",
+    path: "/rfq",
+    external: true,
+  });
+
+  mainItems.push({
+    icon: BoxCubeIcon,
+    name: "New Visa Application",
+    path: "/visa-application",
+    external: true,
+  });
+
+  mainItems.push({
+    icon: DocsIcon, // Or any appropriate icon
+    name: "My Payments",
+    path: "/payments",
+  });
+
   const groups = [
     {
       title: "Main",
-      items: [
-        {
-          icon: GridIcon,
-          name: "Dashboard",
-          path: "/dashboard",
-        },
-        {
-          icon: BoxCubeIcon,
-          name: "New Request",
-          path: "/rfq",
-          external: true,
-        },
-      ],
+      items: mainItems,
     },
   ];
 
@@ -238,6 +264,11 @@ const menuGroups = computed(() => {
           path: "/admin/sourcing-companies",
         },
         {
+          icon: DocsIcon,
+          name: "Transactions",
+          path: "/admin/payments",
+        },
+        {
           icon: ListIcon,
           name: "Categories",
           path: "/admin/categories",
@@ -251,6 +282,11 @@ const menuGroups = computed(() => {
           icon: BoxCubeIcon,
           name: "Send Mail",
           path: "/admin/mail",
+        },
+        {
+          icon: UserGroupIcon,
+          name: "Agent Activity",
+          path: "/admin/agent-activity",
         },
         {
           icon: PlugInIcon,
@@ -285,6 +321,11 @@ const menuGroups = computed(() => {
 
     if (hasRole(["admin", "owner"])) {
       financeItems.push({
+        icon: PieChartIcon,
+        name: "Expenses",
+        path: "/finance/expenses",
+      });
+      financeItems.push({
         icon: BarChartIcon,
         name: "Reports",
         path: "/finance/reports",
@@ -294,6 +335,19 @@ const menuGroups = computed(() => {
     groups.push({
       title: "Finance",
       items: financeItems,
+    });
+  }
+
+  if (hasRole(["visa_admin", "visa_agent"])) {
+    groups.push({
+      title: "Visa Services",
+      items: [
+        {
+          icon: ListIcon,
+          name: "Visa Dashboard",
+          path: "/dashboard",
+        },
+      ],
     });
   }
 
