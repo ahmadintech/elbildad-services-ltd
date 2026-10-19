@@ -143,6 +143,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::delete('/contact-messages/{contactMessage}', [\App\Http\Controllers\Admin\ContactMessageController::class, 'destroy'])->name('admin.contact-messages.destroy');
 
             Route::get('/agent-activity', [\App\Http\Controllers\Admin\AgentActivityController::class, 'index'])->name('admin.agent-activity');
+            Route::post('/agent-activity/notification-settings', [\App\Http\Controllers\Admin\AgentActivityController::class, 'updateNotificationSettings'])->name('admin.agent-activity.settings.update');
+            Route::post('/agent-activity/test-notification', [\App\Http\Controllers\Admin\AgentActivityController::class, 'sendTestNotification'])->name('admin.agent-activity.settings.test');
             Route::get('/payments', [\App\Http\Controllers\PaymentController::class, 'adminIndex'])->name('admin.payments');
         });
         Route::prefix('agent')->middleware('role:agent|super_agent')->group(function () {

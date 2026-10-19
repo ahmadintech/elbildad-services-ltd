@@ -3,8 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AgentActivityLog;
+use App\Models\AgentNotificationSetting;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class AgentActivityController extends Controller
@@ -175,11 +179,94 @@ class AgentActivityController extends Controller
             ['label' => 'Stalled (3d+)',    'count' => $stalledCount,                        'color' => 'red'],
         ];
 
+        $notificationSettings = AgentNotificationSetting::forAdmin(auth()->id());
+
+        $recentLogs = AgentActivityLog::with('agent:id,name,email')
+            ->latest('occurred_at')
+            ->limit(40)
+            ->get()
+            ->map(function ($log) {
+                return [
+                    'id'                    => $log->id,
+                    'agent_name'            => $log->agent?->name ?? 'Unknown Agent',
+                    'agent_email'           => $log->agent?->email ?? '',
+                    'event'                 => $log->event,
+                    'ip_address'            => $log->ip_address,
+                    'user_agent'            => $log->user_agent,
+                    'occurred_at_human'     => $log->occurred_at?->diffForHumans(),
+                    'occurred_at_formatted' => $log->occurred_at?->format('M d, Y H:i:s'),
+                ];
+            });
+
+        $agentList = User::role(['agent', 'super_agent'])
+            ->select('id', 'name', 'email')
+            ->orderBy('name')
+            ->get();
+
         return Inertia::render('Admin/AgentActivity/Index', [
-            'agents'        => $agents,
-            'summary'       => $summary,
-            'statusOverview' => $statusOverview,
-            'totalRfqs'     => $totalRfqs,
+            'agents'               => $agents,
+            'summary'              => $summary,
+            'statusOverview'       => $statusOverview,
+            'totalRfqs'            => $totalRfqs,
+            'notificationSettings' => $notificationSettings,
+            'recentLogs'           => $recentLogs,
+            'agentList'            => $agentList,
         ]);
     }
+
+    /**
+     * Update notification settings for the authenticated administrator.
+     */
+    public function updateNotificationSettings(Request $request)
+    {
+        $validated = $request->validate([
+            'notify_on_login'      => 'required|boolean',
+            'notify_on_logout'     => 'required|boolean',
+            'notify_on_inactivity' => 'required|boolean',
+            'inactivity_hours'     => 'required|integer|min:1|max:720',
+            'exclude_weekends'     => 'required|boolean',
+            'sound_chime'          => 'required|boolean',
+            'monitored_agents'     => 'nullable|array',
+        ]);
+
+        if (empty($validated['monitored_agents'])) {
+            $validated['monitored_agents'] = ['all'];
+        }
+
+        AgentNotificationSetting::updateOrCreate(
+            ['admin_id' => auth()->id()],
+            $validated
+        );
+
+        return back()->with('success', 'Agent notification preferences updated successfully.');
+    }
+
+    /**
+     * Send a test alert to verify notification bell and audio chime.
+     */
+    public function sendTestNotification(Request $request)
+    {
+        $admin = auth()->user();
+        $setting = AgentNotificationSetting::forAdmin($admin->id);
+
+        $admin->notifications()->create([
+            'id' => Str::uuid()->toString(),
+            'type' => 'App\Notifications\AgentActivityNotification',
+            'data' => [
+                'type' => 'Test Notification',
+                'event' => 'test',
+                'agent_id' => $admin->id,
+                'agent_name' => 'System Tester',
+                'message' => 'Agent Activity Notification test successful. Audio chime and alerts are configured.',
+                'action_url' => '/admin/agent-activity',
+                'sound' => $setting->sound_chime,
+                'time' => now()->diffForHumans(),
+            ],
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return back()->with('success', 'Test alert sent! Check your notification bell.');
+    }
 }
+

@@ -59,10 +59,11 @@
       </div>
 
       <ul class="flex flex-col h-auto overflow-y-auto custom-scrollbar">
-        <li v-for="notification in notifications" :key="notification.id" @click="handleItemClick">
-          <a
+        <li v-for="notification in notifications" :key="notification.id">
+          <Link
             class="flex gap-3 rounded-lg border-b border-gray-100 p-3 px-4.5 py-3 hover:bg-gray-100 dark:border-gray-800 dark:hover:bg-white/5"
-            :href="notification.action_url !== '#' ? notification.action_url : '#'"
+            :href="notification.action_url && notification.action_url !== '#' ? notification.action_url : '#'"
+            @click="closeDropdown"
           >
             <span class="relative block w-full h-10 rounded-full z-1 max-w-10">
               <div class="flex h-10 w-10 items-center justify-center rounded-full bg-brand-50 text-brand-500 dark:bg-brand-500/10 dark:text-brand-400">
@@ -85,7 +86,7 @@
                 <span>{{ notification.time }}</span>
               </span>
             </span>
-          </a>
+          </Link>
         </li>
         <li v-if="notifications.length === 0" class="p-4 text-center text-sm text-gray-500 dark:text-gray-400">
           No new notifications

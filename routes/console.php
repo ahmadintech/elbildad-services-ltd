@@ -36,3 +36,10 @@ Schedule::call(function () {
         \Illuminate\Support\Facades\Log::error('Scheduled Zoho token refresh failed: ' . $e->getMessage());
     }
 })->cron('*/45 * * * *')->name('zoho-token-refresh')->withoutOverlapping();
+
+// Check for inactive agents every hour
+Schedule::command('agents:check-inactivity')
+    ->hourly()
+    ->withoutOverlapping()
+    ->runInBackground();
+
