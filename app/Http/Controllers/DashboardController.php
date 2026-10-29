@@ -39,13 +39,11 @@ class DashboardController extends Controller
             return $this->agentDashboard($user);
         }
 
-        // Accountant, Finance, or staff with operational/finance permissions
+        // Any custom staff role (e.g. accountant, auditor, manager) or user with assigned permissions
         if (
-            $user->hasRole(['accountant', 'finance']) ||
-            $user->can('view_dashboard') ||
-            $user->can('view_invoices') ||
-            $user->can('view_expenses') ||
-            $user->can('view_reports')
+            !$user->hasRole('customer') ||
+            $user->getAllPermissions()->isNotEmpty() ||
+            $user->roles->count() > 1
         ) {
             return $this->adminDashboard($user);
         }
