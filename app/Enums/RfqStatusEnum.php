@@ -21,6 +21,8 @@ enum RfqStatusEnum: string
     case AWAITING_PAYMENT  = 'awaiting_payment';  // Customer needs to pay the quoted product price
     case PAYMENT_RECEIVED  = 'payment_received';  // Full product payment received
 
-    // ── Terminal ──────────────────────────────────────────────────────────────
-    case NOT_FOUND = 'not_found'; // Agent could not source the product
+    // ── Terminal / Inactive ───────────────────────────────────────────────────
+    case NOT_FOUND    = 'not_found';    // Agent could not source the product
+    case GHOSTED      = 'ghosted';      // Customer or counterparty became unresponsive
+    case NO_RESPONSES = 'no_responses'; // No responses received from suppliers/client
 }

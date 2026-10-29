@@ -28,7 +28,11 @@ class ExpenseController extends Controller
 
         // Category filter
         if ($request->filled('category') && $request->category !== 'all') {
-            $query->where('category', $request->category);
+            if (in_array($request->category, ['running_cost', 'running_shipment'])) {
+                $query->whereIn('category', ['running_cost', 'running_shipment']);
+            } else {
+                $query->where('category', $request->category);
+            }
         }
 
         // RFQ filter
@@ -75,7 +79,8 @@ class ExpenseController extends Controller
             'total_expenses' => (float) $allExpenses->sum('amount'),
             'total_purchase' => (float) $allExpenses->where('category', 'purchase')->sum('amount'),
             'total_shipment' => (float) $allExpenses->where('category', 'shipment')->sum('amount'),
-            'total_running_shipment' => (float) $allExpenses->where('category', 'running_shipment')->sum('amount'),
+            'total_running_cost' => (float) $allExpenses->whereIn('category', ['running_cost', 'running_shipment'])->sum('amount'),
+            'total_running_shipment' => (float) $allExpenses->whereIn('category', ['running_cost', 'running_shipment'])->sum('amount'),
             'total_salary' => (float) $allExpenses->where('category', 'salary')->sum('amount'),
             'this_month' => (float) $allExpenses->filter(function ($e) use ($currentMonth) {
                 return $e->expense_date && $e->expense_date->format('Y-m') === $currentMonth;
@@ -120,7 +125,7 @@ class ExpenseController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'category' => 'required|in:purchase,shipment,running_shipment,salary,operational',
+            'category' => 'required|in:purchase,shipment,running_shipment,running_cost,salary,operational',
             'title' => 'required|string|max:255',
             'amount' => 'required|numeric|min:0.01',
             'expense_date' => 'required|date',
@@ -135,8 +140,13 @@ class ExpenseController extends Controller
             'receipt' => 'nullable|file|mimes:jpeg,png,jpg,webp,pdf|max:10240',
         ]);
 
-        if ($validated['category'] === 'running_shipment' && empty($validated['note'])) {
-            return Redirect::back()->withErrors(['note' => 'A descriptive note is required for Running Shipment expenses.']);
+        if (in_array($validated['category'], ['running_cost', 'running_shipment']) && empty($validated['note'])) {
+            return Redirect::back()->withErrors(['note' => 'A descriptive note is required for Running Cost expenses.']);
+        }
+
+        // Normalize running_shipment to running_cost
+        if ($validated['category'] === 'running_shipment') {
+            $validated['category'] = 'running_cost';
         }
 
         if ($validated['category'] === 'salary' && empty($validated['agent_id'])) {
@@ -145,15 +155,20 @@ class ExpenseController extends Controller
 
         // Generate sequential unique expense number: EXP-YYYYMM-XXXX
         $prefix = 'EXP-' . date('Ym') . '-';
-        $latest = Expense::where('expense_number', 'like', "{$prefix}%")
-            ->orderBy('created_at', 'desc')
+        $latest = Expense::withTrashed()
+            ->where('expense_number', 'like', "{$prefix}%")
+            ->orderBy('expense_number', 'desc')
             ->first();
 
         $sequence = 1;
         if ($latest && preg_match('/-(\d+)$/', $latest->expense_number, $matches)) {
             $sequence = intval($matches[1]) + 1;
         }
-        $expenseNumber = $prefix . str_pad($sequence, 4, '0', STR_PAD_LEFT);
+
+        do {
+            $expenseNumber = $prefix . str_pad($sequence, 4, '0', STR_PAD_LEFT);
+            $sequence++;
+        } while (Expense::withTrashed()->where('expense_number', $expenseNumber)->exists());
 
         $data = [
             'expense_number' => $expenseNumber,
@@ -189,7 +204,7 @@ class ExpenseController extends Controller
     public function update(Request $request, Expense $expense): RedirectResponse
     {
         $validated = $request->validate([
-            'category' => 'required|in:purchase,shipment,running_shipment,salary,operational',
+            'category' => 'required|in:purchase,shipment,running_shipment,running_cost,salary,operational',
             'title' => 'required|string|max:255',
             'amount' => 'required|numeric|min:0.01',
             'expense_date' => 'required|date',
@@ -204,8 +219,13 @@ class ExpenseController extends Controller
             'receipt' => 'nullable|file|mimes:jpeg,png,jpg,webp,pdf|max:10240',
         ]);
 
-        if ($validated['category'] === 'running_shipment' && empty($validated['note'])) {
-            return Redirect::back()->withErrors(['note' => 'A descriptive note is required for Running Shipment expenses.']);
+        if (in_array($validated['category'], ['running_cost', 'running_shipment']) && empty($validated['note'])) {
+            return Redirect::back()->withErrors(['note' => 'A descriptive note is required for Running Cost expenses.']);
+        }
+
+        // Normalize running_shipment to running_cost
+        if ($validated['category'] === 'running_shipment') {
+            $validated['category'] = 'running_cost';
         }
 
         if ($validated['category'] === 'salary' && empty($validated['agent_id'])) {
@@ -293,7 +313,7 @@ class ExpenseController extends Controller
                     fputcsv($handle, [
                         $e->expense_number,
                         $e->expense_date ? $e->expense_date->format('Y-m-d') : '',
-                        ucfirst(str_replace('_', ' ', $e->category)),
+                        in_array($e->category, ['running_cost', 'running_shipment']) ? 'Running Cost' : ucwords(str_replace('_', ' ', $e->category)),
                         $e->title,
                         number_format($e->amount, 2, '.', ''),
                         $e->rfq ? $e->rfq->product_name : '',

@@ -25,6 +25,8 @@
             rfq.status.toLowerCase() === 'assigned' ? 'bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-500' :
             rfq.status.toLowerCase() === 'completed' ? 'bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500' :
             rfq.status.toLowerCase() === 'not_found' ? 'bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-500' :
+            rfq.status.toLowerCase() === 'ghosted' ? 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' :
+            rfq.status.toLowerCase() === 'no_responses' ? 'bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-400' :
             'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
           ]">
             {{ rfq.status.replace('_', ' ') }}

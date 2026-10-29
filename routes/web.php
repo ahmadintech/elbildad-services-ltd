@@ -76,7 +76,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/notifications/{id}/mark-as-read', [\App\Http\Controllers\NotificationController::class, 'markAsRead'])->name('notifications.mark-as-read');
 
     // Tasks & Scheduled Talks (monday.com style)
-    Route::middleware('role:admin|owner|agent|super_agent')->group(function () {
+    Route::middleware('role_or_permission:admin|owner|super_admin|agent|super_agent|view_tasks|menu_tasks')->group(function () {
         Route::get('/tasks', [\App\Http\Controllers\TaskController::class, 'index'])->name('tasks.index');
         Route::post('/tasks', [\App\Http\Controllers\TaskController::class, 'store'])->name('tasks.store');
         Route::put('/tasks/{task}', [\App\Http\Controllers\TaskController::class, 'update'])->name('tasks.update');
@@ -88,18 +88,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     Route::patch('/visa-application/{visaApplication}/status', [\App\Http\Controllers\VisaApplicationController::class, 'updateStatus'])
-        ->middleware('role:visa_admin|visa_agent')
+        ->middleware('role_or_permission:admin|owner|super_admin|visa_admin|visa_agent|manage_visa_applications')
         ->name('visa.applications.update-status');
 
     Route::prefix('admin')->group(function () {
-        Route::middleware(['role:admin|owner'])->group(function () {
+        Route::middleware(['role_or_permission:admin|owner|super_admin|manage_users|view_users|manage_roles|manage_permissions|view_rfqs|manage_sourcing_companies|manage_categories|send_mail|manage_contact_messages|view_agent_activity|view_transactions|menu_users|menu_rfqs|menu_sourcing_companies|menu_transactions|menu_categories|menu_contact_messages|menu_send_mail|menu_agent_activity|menu_roles_permissions'])->group(function () {
             Route::get('/users', [\App\Http\Controllers\UserController::class, 'index'])->name('admin.users');
             Route::post('/users', [\App\Http\Controllers\UserController::class, 'store'])->name('admin.users.store');
             Route::put('/users/{user}', [\App\Http\Controllers\UserController::class, 'update'])->name('admin.users.update');
             Route::delete('/users/{user}', [\App\Http\Controllers\UserController::class, 'destroy'])->name('admin.users.destroy');
             
             Route::get('/roles', [\App\Http\Controllers\RoleController::class, 'index'])->name('admin.roles');
-            
             Route::post('/roles', [\App\Http\Controllers\RoleController::class, 'store'])->name('admin.roles.store');
             Route::put('/roles/{role:id}', [\App\Http\Controllers\RoleController::class, 'update'])->name('admin.roles.update');
             Route::delete('/roles/{role:id}', [\App\Http\Controllers\RoleController::class, 'destroy'])->name('admin.roles.destroy');
@@ -156,8 +155,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Customer payments route
     Route::get('/payments', [\App\Http\Controllers\PaymentController::class, 'index'])->name('payments.index');
 
-    // Owner, Admin, and Agent Finance Routes
-    Route::middleware(['role:owner|admin|agent|super_agent'])->group(function () {
+    // Owner, Admin, Agent, and Accountant/Finance Routes
+    Route::middleware(['role_or_permission:owner|admin|super_admin|agent|super_agent|accountant|finance|view_invoices|view_estimates|view_items|view_expenses|view_reports|menu_invoices|menu_estimates|menu_items|menu_expenses|menu_reports'])->group(function () {
         Route::prefix('finance')->group(function () {
             // Items (Agents can view/manage items based on requirement "should be able to... Items")
             Route::get('/items', [\App\Http\Controllers\Finance\ItemController::class, 'index'])->name('finance.items.index');
@@ -177,32 +176,32 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('/estimates/{estimate}/send', [\App\Http\Controllers\Finance\EstimateController::class, 'send'])->name('finance.estimates.send');
             Route::post('/estimates/{estimate}/accept', [\App\Http\Controllers\Finance\EstimateController::class, 'accept'])->name('finance.estimates.accept');
             Route::post('/estimates/{estimate}/decline', [\App\Http\Controllers\Finance\EstimateController::class, 'decline'])->name('finance.estimates.decline');
-            Route::delete('/estimates/{estimate}', [\App\Http\Controllers\Finance\EstimateController::class, 'destroy'])->name('finance.estimates.destroy')->middleware('role:owner|admin');
+            Route::delete('/estimates/{estimate}', [\App\Http\Controllers\Finance\EstimateController::class, 'destroy'])->name('finance.estimates.destroy')->middleware('role_or_permission:owner|admin|super_admin|delete_estimates');
 
             // Invoices (Agent can only View, Send)
             Route::get('/invoices', [\App\Http\Controllers\Finance\InvoiceController::class, 'index'])->name('finance.invoices.index');
-            Route::get('/invoices/create', [\App\Http\Controllers\Finance\InvoiceController::class, 'create'])->name('finance.invoices.create')->middleware('role:owner|admin');
-            Route::post('/invoices', [\App\Http\Controllers\Finance\InvoiceController::class, 'store'])->name('finance.invoices.store')->middleware('role:owner|admin');
-            Route::post('/invoices/{estimate}/convert', [\App\Http\Controllers\Finance\InvoiceController::class, 'createFromEstimate'])->name('finance.invoices.convert')->middleware('role:owner|admin|agent|super_agent');
+            Route::get('/invoices/create', [\App\Http\Controllers\Finance\InvoiceController::class, 'create'])->name('finance.invoices.create')->middleware('role_or_permission:owner|admin|super_admin|agent|super_agent|accountant|finance|create_invoices');
+            Route::post('/invoices', [\App\Http\Controllers\Finance\InvoiceController::class, 'store'])->name('finance.invoices.store')->middleware('role_or_permission:owner|admin|super_admin|agent|super_agent|accountant|finance|create_invoices');
+            Route::post('/invoices/{estimate}/convert', [\App\Http\Controllers\Finance\InvoiceController::class, 'createFromEstimate'])->name('finance.invoices.convert')->middleware('role_or_permission:owner|admin|super_admin|agent|super_agent|accountant|finance|create_invoices');
             Route::get('/invoices/{invoice}', [\App\Http\Controllers\Finance\InvoiceController::class, 'show'])->name('finance.invoices.show');
             Route::get('/invoices/{invoice}/pdf', [\App\Http\Controllers\Finance\InvoiceController::class, 'downloadPdf'])->name('finance.invoices.pdf');
             Route::post('/invoices/{invoice}/send', [\App\Http\Controllers\Finance\InvoiceController::class, 'send'])->name('finance.invoices.send');
-            Route::post('/invoices/{invoice}/void', [\App\Http\Controllers\Finance\InvoiceController::class, 'void'])->name('finance.invoices.void')->middleware('role:owner|admin');
-            Route::post('/invoices/{invoice}/payment', [\App\Http\Controllers\Finance\InvoiceController::class, 'recordPayment'])->name('finance.invoices.payment')->middleware('role:owner|admin');
-            Route::delete('/invoices/{invoice}', [\App\Http\Controllers\Finance\InvoiceController::class, 'destroy'])->name('finance.invoices.destroy')->middleware('role:owner|admin');
+            Route::post('/invoices/{invoice}/void', [\App\Http\Controllers\Finance\InvoiceController::class, 'void'])->name('finance.invoices.void')->middleware('role_or_permission:owner|admin|super_admin|accountant|finance|edit_invoices');
+            Route::post('/invoices/{invoice}/payment', [\App\Http\Controllers\Finance\InvoiceController::class, 'recordPayment'])->name('finance.invoices.payment')->middleware('role_or_permission:owner|admin|super_admin|accountant|finance|record_invoice_payments');
+            Route::delete('/invoices/{invoice}', [\App\Http\Controllers\Finance\InvoiceController::class, 'destroy'])->name('finance.invoices.destroy')->middleware('role_or_permission:owner|admin|super_admin|delete_invoices');
 
             // Reports
-            Route::get('/reports', [\App\Http\Controllers\Finance\ReportController::class, 'index'])->name('finance.reports.index')->middleware('role:owner|admin');
-            Route::get('/reports/invoice-summary', [\App\Http\Controllers\Finance\ReportController::class, 'invoiceSummary'])->name('finance.reports.invoice-summary')->middleware('role:owner|admin');
-            Route::get('/reports/payments-received', [\App\Http\Controllers\Finance\ReportController::class, 'paymentReceived'])->name('finance.reports.payments-received')->middleware('role:owner|admin');
-            Route::get('/reports/outstanding-receivables', [\App\Http\Controllers\Finance\ReportController::class, 'outstandingReceivables'])->name('finance.reports.outstanding-receivables')->middleware('role:owner|admin');
+            Route::get('/reports', [\App\Http\Controllers\Finance\ReportController::class, 'index'])->name('finance.reports.index')->middleware('role_or_permission:owner|admin|super_admin|accountant|finance|view_reports|menu_reports');
+            Route::get('/reports/invoice-summary', [\App\Http\Controllers\Finance\ReportController::class, 'invoiceSummary'])->name('finance.reports.invoice-summary')->middleware('role_or_permission:owner|admin|super_admin|accountant|finance|view_reports');
+            Route::get('/reports/payments-received', [\App\Http\Controllers\Finance\ReportController::class, 'paymentReceived'])->name('finance.reports.payments-received')->middleware('role_or_permission:owner|admin|super_admin|accountant|finance|view_reports');
+            Route::get('/reports/outstanding-receivables', [\App\Http\Controllers\Finance\ReportController::class, 'outstandingReceivables'])->name('finance.reports.outstanding-receivables')->middleware('role_or_permission:owner|admin|super_admin|accountant|finance|view_reports');
 
-            // Expenses (Admin & Owner Only)
-            Route::middleware(['role:owner|admin'])->group(function () {
+            // Expenses (Admin, Owner, Accountant, and Authorized Roles)
+            Route::middleware(['role_or_permission:owner|admin|super_admin|accountant|finance|view_expenses|create_expenses|menu_expenses'])->group(function () {
                 Route::get('/expenses', [\App\Http\Controllers\Finance\ExpenseController::class, 'index'])->name('finance.expenses.index');
                 Route::post('/expenses', [\App\Http\Controllers\Finance\ExpenseController::class, 'store'])->name('finance.expenses.store');
                 Route::put('/expenses/{expense}', [\App\Http\Controllers\Finance\ExpenseController::class, 'update'])->name('finance.expenses.update');
-                Route::delete('/expenses/{expense}', [\App\Http\Controllers\Finance\ExpenseController::class, 'destroy'])->name('finance.expenses.destroy');
+                Route::delete('/expenses/{expense}', [\App\Http\Controllers\Finance\ExpenseController::class, 'destroy'])->name('finance.expenses.destroy')->middleware('role_or_permission:owner|admin|super_admin|delete_expenses');
                 Route::get('/expenses/export', [\App\Http\Controllers\Finance\ExpenseController::class, 'export'])->name('finance.expenses.export');
             });
         });

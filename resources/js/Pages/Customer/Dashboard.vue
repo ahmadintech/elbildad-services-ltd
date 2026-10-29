@@ -176,7 +176,9 @@ const isStepActive = (currentStatus, stepValue) => {
     'purchased': 3,
     'shipped': 4,
     'completed': 5,
-    'not_found': -1
+    'not_found': -1,
+    'ghosted': -1,
+    'no_responses': -1
   }
   return statusWeight[currentStatus.toLowerCase()] >= statusWeight[stepValue]
 }
@@ -199,6 +201,8 @@ const getProgressPercentage = (status) => {
     'pending': 0,
     'queued': 0,
     'not_found': 0,
+    'ghosted': 0,
+    'no_responses': 0,
     'assigned': 20,
     'sourcing': 40,
     'purchased': 60,
@@ -211,7 +215,8 @@ const getProgressPercentage = (status) => {
 const getStatusClasses = (status) => {
   const s = status.toLowerCase()
   if (s === 'completed') return 'bg-green-50 text-green-600 dark:bg-green-500/10 dark:text-green-500'
-  if (s === 'not_found') return 'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-500'
+  if (['not_found', 'no_responses'].includes(s)) return 'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-500'
+  if (s === 'ghosted') return 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
   if (['pending', 'queued', 'assigned'].includes(s)) return 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-500'
   if (['sourcing', 'purchased'].includes(s)) return 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-500'
   return 'bg-purple-50 text-purple-600 dark:bg-purple-500/10 dark:text-purple-500'

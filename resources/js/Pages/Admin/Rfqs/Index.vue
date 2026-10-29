@@ -349,6 +349,8 @@ const rfqStatusClass = (status) => {
   if (s === 'assigned') return `${base} bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-500`
   if (s === 'completed') return `${base} bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500`
   if (s === 'not_found') return `${base} bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-500`
+  if (s === 'ghosted') return `${base} bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300`
+  if (s === 'no_responses') return `${base} bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-400`
   if (s === 'queued') return `${base} bg-purple-50 text-purple-600`
   if (s === 'sourcing') return `${base} bg-indigo-50 text-indigo-600`
   if (s === 'purchased') return `${base} bg-teal-50 text-teal-600`

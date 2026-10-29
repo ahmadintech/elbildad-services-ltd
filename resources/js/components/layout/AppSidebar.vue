@@ -200,16 +200,36 @@ const hasRole = (roles) => {
   return roles.some((role) => userRoles.includes(role));
 };
 
+const hasPermission = (permission) => {
+  if (hasRole(["admin", "owner", "super_admin"])) return true;
+  const userPermissions = page.props.auth?.permissions || page.props.auth.user?.permissions || [];
+  return userPermissions.includes(permission);
+};
+
+const canAccess = (menuKey, actionPerms = [], fallbackRoles = []) => {
+  if (hasRole(["admin", "owner", "super_admin"])) return true;
+  const userPermissions = page.props.auth?.permissions || page.props.auth.user?.permissions || [];
+  if (userPermissions.includes(menuKey)) return true;
+  if (actionPerms.some((p) => userPermissions.includes(p))) return true;
+  if (fallbackRoles.length > 0 && hasRole(fallbackRoles)) return true;
+  return false;
+};
+
 const menuGroups = computed(() => {
-  const mainItems = [
-    {
+  const groups = [];
+
+  // 1. Main Navigation Group
+  const mainItems = [];
+
+  if (canAccess("menu_dashboard", ["view_dashboard"], ["admin", "owner", "super_admin", "agent", "super_agent", "customer", "visa_admin", "visa_agent", "accountant", "finance"])) {
+    mainItems.push({
       icon: GridIcon,
       name: "Dashboard",
       path: "/dashboard",
-    },
-  ];
+    });
+  }
 
-  if (hasRole(["admin", "owner", "agent", "super_agent"])) {
+  if (canAccess("menu_tasks", ["view_tasks", "create_tasks", "edit_tasks"], ["admin", "owner", "super_admin", "agent", "super_agent"])) {
     mainItems.push({
       icon: TaskIcon,
       name: "Tasks & Schedule",
@@ -217,128 +237,181 @@ const menuGroups = computed(() => {
     });
   }
 
-  mainItems.push({
-    icon: BoxCubeIcon,
-    name: "New Sourcing Request",
-    path: "/rfq",
-    external: true,
-  });
-
-  mainItems.push({
-    icon: BoxCubeIcon,
-    name: "New Visa Application",
-    path: "/visa-application",
-    external: true,
-  });
-
-  mainItems.push({
-    icon: DocsIcon, // Or any appropriate icon
-    name: "My Payments",
-    path: "/payments",
-  });
-
-  const groups = [
-    {
-      title: "Main",
-      items: mainItems,
-    },
-  ];
-
-  if (hasRole(["admin", "owner"])) {
-    groups.push({
-      title: "Management",
-      items: [
-        {
-          icon: UserGroupIcon,
-          name: "Users",
-          path: "/admin/users",
-        },
-        {
-          icon: ListIcon,
-          name: "RFQs",
-          path: "/admin/rfqs",
-        },
-        {
-          icon: BoxCubeIcon,
-          name: "Sourcing Companies",
-          path: "/admin/sourcing-companies",
-        },
-        {
-          icon: DocsIcon,
-          name: "Transactions",
-          path: "/admin/payments",
-        },
-        {
-          icon: ListIcon,
-          name: "Categories",
-          path: "/admin/categories",
-        },
-        {
-          icon: ListIcon,
-          name: "Contact Messages",
-          path: "/admin/contact-messages",
-        },
-        {
-          icon: BoxCubeIcon,
-          name: "Send Mail",
-          path: "/admin/mail",
-        },
-        {
-          icon: UserGroupIcon,
-          name: "Agent Activity",
-          path: "/admin/agent-activity",
-        },
-        {
-          icon: PlugInIcon,
-          name: "Roles & Permissions",
-          subItems: [
-            { name: "Roles", path: "/admin/roles" },
-            { name: "Permissions", path: "/admin/permissions" },
-          ],
-        },
-      ],
+  if (canAccess("menu_new_sourcing_request", ["create_rfqs"], ["admin", "owner", "super_admin", "customer", "agent", "super_agent"])) {
+    mainItems.push({
+      icon: BoxCubeIcon,
+      name: "New Sourcing Request",
+      path: "/rfq",
+      external: true,
     });
   }
 
-  if (hasRole(["admin", "owner", "agent", "super_agent"])) {
-    const financeItems = [
-      {
-        icon: DocsIcon,
-        name: "Invoices",
-        path: "/finance/invoices",
-      },
-      {
-        icon: PageIcon,
-        name: "Estimates",
-        path: "/finance/estimates",
-      },
-      {
-        icon: TableIcon,
-        name: "Items",
-        path: "/finance/items",
-      },
-    ];
+  if (canAccess("menu_new_visa_application", ["manage_visa_applications"], ["admin", "owner", "super_admin", "customer"])) {
+    mainItems.push({
+      icon: BoxCubeIcon,
+      name: "New Visa Application",
+      path: "/visa-application",
+      external: true,
+    });
+  }
 
-    if (hasRole(["admin", "owner"])) {
-      financeItems.push({
-        icon: PieChartIcon,
-        name: "Expenses",
-        path: "/finance/expenses",
-      });
-      financeItems.push({
-        icon: BarChartIcon,
-        name: "Reports",
-        path: "/finance/reports",
-      });
+  if (canAccess("menu_my_payments", [], ["customer"])) {
+    mainItems.push({
+      icon: DocsIcon,
+      name: "My Payments",
+      path: "/payments",
+    });
+  }
+
+  if (mainItems.length > 0) {
+    groups.push({
+      title: "Main",
+      items: mainItems,
+    });
+  }
+
+  // 2. Management Group
+  const managementItems = [];
+
+  if (canAccess("menu_users", ["view_users", "manage_users"], ["admin", "owner", "super_admin"])) {
+    managementItems.push({
+      icon: UserGroupIcon,
+      name: "Users",
+      path: "/admin/users",
+    });
+  }
+
+  if (canAccess("menu_rfqs", ["view_rfqs", "edit_rfqs", "assign_rfqs"], ["admin", "owner", "super_admin"])) {
+    managementItems.push({
+      icon: ListIcon,
+      name: "RFQs",
+      path: "/admin/rfqs",
+    });
+  }
+
+  if (canAccess("menu_sourcing_companies", ["manage_sourcing_companies"], ["admin", "owner", "super_admin"])) {
+    managementItems.push({
+      icon: BoxCubeIcon,
+      name: "Sourcing Companies",
+      path: "/admin/sourcing-companies",
+    });
+  }
+
+  if (canAccess("menu_transactions", ["view_transactions"], ["admin", "owner", "super_admin"])) {
+    managementItems.push({
+      icon: DocsIcon,
+      name: "Transactions",
+      path: "/admin/payments",
+    });
+  }
+
+  if (canAccess("menu_categories", ["manage_categories"], ["admin", "owner", "super_admin"])) {
+    managementItems.push({
+      icon: ListIcon,
+      name: "Categories",
+      path: "/admin/categories",
+    });
+  }
+
+  if (canAccess("menu_contact_messages", ["manage_contact_messages"], ["admin", "owner", "super_admin"])) {
+    managementItems.push({
+      icon: ListIcon,
+      name: "Contact Messages",
+      path: "/admin/contact-messages",
+    });
+  }
+
+  if (canAccess("menu_send_mail", ["send_mail"], ["admin", "owner", "super_admin"])) {
+    managementItems.push({
+      icon: BoxCubeIcon,
+      name: "Send Mail",
+      path: "/admin/mail",
+    });
+  }
+
+  if (canAccess("menu_agent_activity", ["view_agent_activity"], ["admin", "owner", "super_admin"])) {
+    managementItems.push({
+      icon: UserGroupIcon,
+      name: "Agent Activity",
+      path: "/admin/agent-activity",
+    });
+  }
+
+  if (canAccess("menu_roles_permissions", ["manage_roles", "manage_permissions"], ["admin", "owner", "super_admin"])) {
+    const roleSubItems = [];
+    if (canAccess("menu_roles_permissions", ["manage_roles"], ["admin", "owner", "super_admin"])) {
+      roleSubItems.push({ name: "Roles", path: "/admin/roles" });
+    }
+    if (canAccess("menu_roles_permissions", ["manage_permissions"], ["admin", "owner", "super_admin"])) {
+      roleSubItems.push({ name: "Permissions", path: "/admin/permissions" });
     }
 
+    managementItems.push({
+      icon: PlugInIcon,
+      name: "Roles & Permissions",
+      subItems: roleSubItems.length > 0 ? roleSubItems : [{ name: "Roles", path: "/admin/roles" }],
+    });
+  }
+
+  if (managementItems.length > 0) {
+    groups.push({
+      title: "Management",
+      items: managementItems,
+    });
+  }
+
+  // 3. Finance Group
+  const financeItems = [];
+
+  if (canAccess("menu_invoices", ["view_invoices", "create_invoices", "edit_invoices"], ["admin", "owner", "super_admin", "agent", "super_agent", "accountant", "finance"])) {
+    financeItems.push({
+      icon: DocsIcon,
+      name: "Invoices",
+      path: "/finance/invoices",
+    });
+  }
+
+  if (canAccess("menu_estimates", ["view_estimates", "create_estimates", "edit_estimates"], ["admin", "owner", "super_admin", "agent", "super_agent", "accountant", "finance"])) {
+    financeItems.push({
+      icon: PageIcon,
+      name: "Estimates",
+      path: "/finance/estimates",
+    });
+  }
+
+  if (canAccess("menu_items", ["view_items", "manage_items"], ["admin", "owner", "super_admin", "agent", "super_agent", "accountant", "finance"])) {
+    financeItems.push({
+      icon: TableIcon,
+      name: "Items",
+      path: "/finance/items",
+    });
+  }
+
+  if (canAccess("menu_expenses", ["view_expenses", "create_expenses", "edit_expenses"], ["admin", "owner", "super_admin", "accountant", "finance"])) {
+    financeItems.push({
+      icon: PieChartIcon,
+      name: "Expenses",
+      path: "/finance/expenses",
+    });
+  }
+
+  if (canAccess("menu_reports", ["view_reports"], ["admin", "owner", "super_admin", "accountant", "finance"])) {
+    financeItems.push({
+      icon: BarChartIcon,
+      name: "Reports",
+      path: "/finance/reports",
+    });
+  }
+
+  if (financeItems.length > 0) {
     groups.push({
       title: "Finance",
       items: financeItems,
     });
   }
 
-  if (hasRole(["visa_admin", "visa_agent"])) {
+  // 4. Visa Services Group
+  if (canAccess("menu_visa_services", ["manage_visa_applications"], ["visa_admin", "visa_agent"])) {
     groups.push({
       title: "Visa Services",
       items: [
@@ -351,16 +424,19 @@ const menuGroups = computed(() => {
     });
   }
 
-  groups.push({
-    title: "Account",
-    items: [
-      {
-        icon: UserCircleIcon,
-        name: "Profile",
-        path: "/profile",
-      },
-    ],
-  });
+  // 5. Account Group
+  if (canAccess("menu_profile", [], ["admin", "owner", "super_admin", "agent", "super_agent", "customer", "visa_admin", "visa_agent", "accountant", "finance"])) {
+    groups.push({
+      title: "Account",
+      items: [
+        {
+          icon: UserCircleIcon,
+          name: "Profile",
+          path: "/profile",
+        },
+      ],
+    });
+  }
 
   return groups;
 });

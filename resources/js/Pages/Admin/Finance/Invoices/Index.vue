@@ -7,7 +7,7 @@
           <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90">Invoices</h2>
           <p class="text-sm text-gray-500 dark:text-gray-400">View and manage Zoho Invoices.</p>
         </div>
-        <Link v-if="!$page.props.auth.user.roles.includes('agent')" href="/finance/invoices/create" class="inline-flex items-center gap-1.5 rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600 transition-colors">
+        <Link v-if="$page.props.auth?.permissions?.includes('create_invoices') || $page.props.auth?.user?.permissions?.includes('create_invoices') || $page.props.auth?.user?.roles?.some(r => ['owner', 'admin', 'super_admin', 'agent', 'super_agent', 'accountant', 'finance'].includes(r))" href="/finance/invoices/create" class="inline-flex items-center gap-1.5 rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600 transition-colors">
           <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
           Create Invoice
         </Link>
@@ -19,7 +19,7 @@
             <thead>
               <tr class="border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
                 <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400 uppercase tracking-wider">Date &amp; No</p></th>
-                <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400 uppercase tracking-wider">Customer</p></th>
+                <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400 uppercase tracking-wider">Customer &amp; Sourcing</p></th>
                 <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400 uppercase tracking-wider">Amount / Balance</p></th>
                 <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400 uppercase tracking-wider">Status</p></th>
                 <th class="px-5 py-3 text-right sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400 uppercase tracking-wider">Actions</p></th>
@@ -34,6 +34,14 @@
                 <td class="px-5 py-4 sm:px-6">
                   <p class="text-gray-800 text-theme-sm dark:text-gray-400 font-medium">{{ invoice.customer?.name || 'Unknown' }}</p>
                   <p class="text-gray-500 text-theme-xs dark:text-gray-400">{{ invoice.customer?.email }}</p>
+                  <div v-if="invoice.rfq || invoice.supplier_name || invoice.sourcing_company" class="mt-1 flex flex-wrap gap-1">
+                    <span v-if="invoice.rfq" class="inline-flex items-center gap-1 rounded bg-purple-50 px-1.5 py-0.5 text-[11px] font-medium text-purple-700 dark:bg-purple-500/10 dark:text-purple-400">
+                      RFQ: {{ invoice.rfq.product_name }}
+                    </span>
+                    <span v-if="invoice.supplier_name || invoice.sourcing_company" class="inline-flex items-center gap-1 rounded bg-blue-50 px-1.5 py-0.5 text-[11px] font-medium text-blue-700 dark:bg-blue-500/10 dark:text-blue-400">
+                      Sup: {{ invoice.supplier_name || invoice.sourcing_company?.name }}
+                    </span>
+                  </div>
                 </td>
                 <td class="px-5 py-4 sm:px-6">
                   <p class="text-gray-800 text-theme-sm dark:text-gray-400 font-semibold">{{ formatCurrency(invoice.total || 0) }}</p>
@@ -74,7 +82,7 @@
 
                     <!-- Payment -->
                     <button
-                      v-if="invoice.balance_due > 0 && invoice.status !== 'void' && !$page.props.auth.user.roles.some(r => ['agent','super_agent'].includes(r))"
+                      v-if="invoice.balance_due > 0 && invoice.status !== 'void' && ($page.props.auth?.permissions?.includes('record_invoice_payments') || $page.props.auth?.user?.permissions?.includes('record_invoice_payments') || !$page.props.auth.user?.roles?.some(r => ['agent','super_agent'].includes(r)))"
                       @click="openPaymentModal(invoice)"
                       :disabled="isLoading(invoice.id)"
                       class="inline-flex items-center gap-1 text-success-500 hover:text-success-600 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
@@ -84,7 +92,7 @@
 
                     <!-- Void -->
                     <button
-                      v-if="invoice.status !== 'void' && invoice.status !== 'paid' && !$page.props.auth.user.roles.some(r => ['agent','super_agent'].includes(r))"
+                      v-if="invoice.status !== 'void' && invoice.status !== 'paid' && ($page.props.auth?.permissions?.includes('edit_invoices') || $page.props.auth?.user?.permissions?.includes('edit_invoices') || $page.props.auth.user?.roles?.some(r => ['owner', 'admin', 'super_admin', 'accountant', 'finance'].includes(r)))"
                       @click="voidInvoice(invoice)"
                       :disabled="isLoading(invoice.id)"
                       class="inline-flex items-center gap-1 text-warning-500 hover:text-warning-600 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
@@ -98,7 +106,7 @@
 
                     <!-- Delete -->
                     <button
-                      v-if="!$page.props.auth.user.roles.some(r => ['agent','super_agent'].includes(r))"
+                      v-if="$page.props.auth?.permissions?.includes('delete_invoices') || $page.props.auth?.user?.permissions?.includes('delete_invoices') || $page.props.auth.user?.roles?.some(r => ['owner', 'admin', 'super_admin'].includes(r))"
                       @click="confirmDelete(invoice)"
                       :disabled="isLoading(invoice.id)"
                       class="inline-flex items-center gap-1 text-error-400 hover:text-error-500 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"

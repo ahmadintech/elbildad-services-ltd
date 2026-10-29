@@ -89,11 +89,11 @@
           </div>
         </div>
 
-        <!-- Card 3: Freight & Running Shipment -->
+        <!-- Card 3: Shipment & Running Cost -->
         <div class="rounded-2xl border border-gray-200/80 bg-white p-5 shadow-xs dark:border-gray-800 dark:bg-gray-900/60">
           <div class="flex items-center justify-between">
             <p class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-              Shipment & Logistics
+              Shipment & Running Cost
             </p>
             <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">
               <i class="fa-solid fa-plane-departure text-base"></i>
@@ -101,12 +101,12 @@
           </div>
           <div class="mt-3">
             <p class="text-2xl font-black text-gray-900 dark:text-white">
-              {{ formatNaira(stats.total_shipment + stats.total_running_shipment) }}
+              {{ formatNaira(stats.total_shipment + (stats.total_running_cost ?? stats.total_running_shipment ?? 0)) }}
             </p>
             <p class="mt-1 text-xs font-medium text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
               <span>Cargo: {{ formatNaira(stats.total_shipment) }}</span>
               <span class="text-gray-300 dark:text-gray-700">•</span>
-              <span class="text-amber-600 dark:text-amber-400 font-bold">Transit: {{ formatNaira(stats.total_running_shipment) }}</span>
+              <span class="text-amber-600 dark:text-amber-400 font-bold">Running Cost: {{ formatNaira(stats.total_running_cost ?? stats.total_running_shipment ?? 0) }}</span>
             </p>
           </div>
         </div>
@@ -575,7 +575,7 @@
                 'rounded-xl border p-3 text-xs font-semibold flex items-start gap-2.5',
                 form.category === 'purchase' ? 'border-indigo-200 bg-indigo-50/60 text-indigo-900 dark:bg-indigo-950/30 dark:text-indigo-300' :
                 form.category === 'shipment' ? 'border-blue-200 bg-blue-50/60 text-blue-900 dark:bg-blue-950/30 dark:text-blue-300' :
-                form.category === 'running_shipment' ? 'border-amber-200 bg-amber-50/60 text-amber-900 dark:bg-amber-950/30 dark:text-amber-300' :
+                (form.category === 'running_cost' || form.category === 'running_shipment') ? 'border-amber-200 bg-amber-50/60 text-amber-900 dark:bg-amber-950/30 dark:text-amber-300' :
                 'border-emerald-200 bg-emerald-50/60 text-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300'
               ]"
             >
@@ -587,8 +587,8 @@
                 <p v-else-if="form.category === 'shipment'">
                   <span class="font-bold">Shipment:</span> Select the target RFQ and specify the exact RFQ item/waybill number.
                 </p>
-                <p v-else-if="form.category === 'running_shipment'">
-                  <span class="font-bold">Running Shipment:</span> Record ongoing operational logistics, customs clearing, transport, and offloading fees [Amount + Note].
+                <p v-else-if="form.category === 'running_cost' || form.category === 'running_shipment'">
+                  <span class="font-bold">Running Cost:</span> Expenses and logistics spent in running the business or finding client requests [Amount + Note].
                 </p>
                 <p v-else-if="form.category === 'salary'">
                   <span class="font-bold">Salary:</span> Select the agent receiving the payroll disbursement and specify amount [Agent + Amount].
@@ -658,17 +658,17 @@
               </div>
             </div>
 
-            <!-- Conditional Section: RUNNING SHIPMENT [Amount, Note] -->
-            <div v-if="form.category === 'running_shipment'" class="space-y-4 rounded-2xl border border-amber-200 bg-amber-50/30 p-4 dark:border-amber-900/40 dark:bg-amber-950/20">
+            <!-- Conditional Section: RUNNING COST [Amount, Note] -->
+            <div v-if="form.category === 'running_cost' || form.category === 'running_shipment'" class="space-y-4 rounded-2xl border border-amber-200 bg-amber-50/30 p-4 dark:border-amber-900/40 dark:bg-amber-950/20">
               <div>
                 <label class="block text-xs font-bold uppercase tracking-wider text-amber-900 dark:text-amber-300 mb-1.5">
-                  <i class="fa-solid fa-note-sticky mr-1"></i> Running Shipment Note (Breakdown) *
+                  <i class="fa-solid fa-note-sticky mr-1"></i> Running Cost Note (Breakdown) *
                 </label>
                 <textarea
                   v-model="form.note"
                   rows="3"
                   required
-                  placeholder="e.g., Demurrage fee at terminal, offloading labor charge, clearing agent levy, fuel for dispatch truck..."
+                  placeholder="e.g., Demurrage fee, client sourcing logistics & travel, clearing levies, truck fuel, business operations, offloading charges..."
                   class="w-full rounded-xl border border-amber-200 p-3.5 text-xs font-medium text-gray-900 focus:border-brand-500 focus:outline-none dark:border-amber-800 dark:bg-gray-800 dark:text-white"
                 ></textarea>
               </div>
@@ -681,7 +681,7 @@
                   v-model="form.rfq_id"
                   class="h-11 w-full rounded-xl border border-amber-200 px-3.5 text-xs font-semibold text-gray-900 focus:border-brand-500 focus:outline-none dark:border-amber-800 dark:bg-gray-800 dark:text-white"
                 >
-                  <option :value="null">None / General Logistics</option>
+                  <option :value="null">None / General Logistics & Business Operations</option>
                   <option v-for="rfq in rfqs" :key="rfq.id" :value="rfq.id">
                     {{ rfq.product_name }} — Ref: #{{ rfq.tracking_token.substring(0, 8) }}
                   </option>
@@ -814,7 +814,7 @@
             </div>
 
             <!-- Notes (For Purchase, Shipment, or General) -->
-            <div v-if="form.category !== 'running_shipment'">
+            <div v-if="form.category !== 'running_cost' && form.category !== 'running_shipment'">
               <label class="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
                 Additional Notes
               </label>
@@ -888,6 +888,66 @@
           </div>
         </div>
       </div>
+
+      <!-- Delete Expense Confirmation Modal -->
+      <div
+        v-if="showDeleteModal"
+        class="fixed inset-0 z-[9999999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs transition-opacity"
+        @click.self="showDeleteModal = false"
+      >
+        <div class="relative w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-center animate-in fade-in zoom-in-95 duration-150">
+          <!-- Icon -->
+          <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 text-rose-500 dark:bg-rose-950/40 mb-4">
+            <i class="fa-solid fa-triangle-exclamation text-2xl"></i>
+          </div>
+
+          <h3 class="text-lg font-bold text-gray-900 dark:text-white">Delete Expense Record</h3>
+          
+          <p class="mt-2 text-xs sm:text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+            Are you sure you want to delete expense <span class="font-bold text-gray-900 dark:text-white">{{ expenseToDelete?.expense_number }}</span> (<span class="font-bold text-amber-600 dark:text-amber-400">{{ formatNaira(expenseToDelete?.amount) }}</span>)?
+          </p>
+
+          <!-- Expense summary pill -->
+          <div v-if="expenseToDelete" class="mt-4 rounded-2xl border border-gray-100 bg-gray-50/70 p-3.5 text-left dark:border-gray-800 dark:bg-gray-800/40 space-y-1.5 text-xs">
+            <div class="flex items-center justify-between text-gray-500 dark:text-gray-400 text-[11px]">
+              <span>Title</span>
+              <span class="font-bold text-gray-900 dark:text-white truncate max-w-[200px]">{{ expenseToDelete.title }}</span>
+            </div>
+            <div class="flex items-center justify-between text-gray-500 dark:text-gray-400 text-[11px]">
+              <span>Category</span>
+              <span class="font-semibold text-gray-800 dark:text-gray-200">{{ getCategoryLabel(expenseToDelete.category) }}</span>
+            </div>
+            <div class="flex items-center justify-between text-gray-500 dark:text-gray-400 text-[11px]">
+              <span>Date</span>
+              <span class="font-mono text-gray-700 dark:text-gray-300">{{ expenseToDelete.expense_date }}</span>
+            </div>
+          </div>
+
+          <p class="mt-3 text-[11px] text-gray-400">
+            This action will remove the expense from all financial reports and balance metrics.
+          </p>
+
+          <div class="mt-6 flex items-center justify-center gap-3">
+            <button
+              type="button"
+              @click="showDeleteModal = false"
+              class="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-xs font-bold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 transition"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              @click="executeDelete"
+              :disabled="isDeleting"
+              class="w-full inline-flex items-center justify-center gap-1.5 rounded-xl bg-rose-500 px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-rose-600 active:scale-95 transition disabled:opacity-50"
+            >
+              <i v-if="isDeleting" class="fa-solid fa-circle-notch fa-spin text-xs"></i>
+              <i v-else class="fa-solid fa-trash-can text-xs"></i>
+              <span>{{ isDeleting ? 'Deleting...' : 'Yes, Delete Expense' }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </AdminLayout>
 </template>
@@ -916,19 +976,23 @@ const submitting = ref(false)
 const showReceiptModal = ref(false)
 const activeReceiptUrl = ref('')
 
+const showDeleteModal = ref(false)
+const expenseToDelete = ref(null)
+const isDeleting = ref(false)
+
 // Category tab filters
 const categoryTabs = [
   { value: 'all', label: 'All Expenses', icon: 'fa-solid fa-layer-group' },
   { value: 'purchase', label: 'Purchase', icon: 'fa-solid fa-cart-shopping' },
   { value: 'shipment', label: 'Shipment', icon: 'fa-solid fa-plane-departure' },
-  { value: 'running_shipment', label: 'Running Shipment', icon: 'fa-solid fa-truck-fast' },
+  { value: 'running_cost', label: 'Running Cost', icon: 'fa-solid fa-briefcase' },
   { value: 'salary', label: 'Salary', icon: 'fa-solid fa-users-gear' },
 ]
 
 const availableCategories = [
   { value: 'purchase', label: 'Purchase', icon: 'fa-solid fa-cart-shopping' },
   { value: 'shipment', label: 'Shipment', icon: 'fa-solid fa-plane-departure' },
-  { value: 'running_shipment', label: 'Running Shipment', icon: 'fa-solid fa-truck-fast' },
+  { value: 'running_cost', label: 'Running Cost', icon: 'fa-solid fa-briefcase' },
   { value: 'salary', label: 'Salary', icon: 'fa-solid fa-users-gear' },
 ]
 
@@ -992,8 +1056,9 @@ const getCategoryLabel = (category) => {
       return 'Purchase'
     case 'shipment':
       return 'Shipment'
+    case 'running_cost':
     case 'running_shipment':
-      return 'Running Shipment'
+      return 'Running Cost'
     case 'salary':
       return 'Salary'
     default:
@@ -1007,8 +1072,9 @@ const getCategoryIcon = (category) => {
       return 'fa-solid fa-cart-shopping'
     case 'shipment':
       return 'fa-solid fa-plane-departure'
+    case 'running_cost':
     case 'running_shipment':
-      return 'fa-solid fa-truck-fast'
+      return 'fa-solid fa-briefcase'
     case 'salary':
       return 'fa-solid fa-users-gear'
     default:
@@ -1022,6 +1088,7 @@ const getCategoryBadgeClass = (category) => {
       return 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800'
     case 'shipment':
       return 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
+    case 'running_cost':
     case 'running_shipment':
       return 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
     case 'salary':
@@ -1037,8 +1104,9 @@ const getTitlePlaceholder = (category) => {
       return 'e.g., Procurement of 200pcs solar inverters from Guangzhou'
     case 'shipment':
       return 'e.g., Air freight charges for Guangzhou to Lagos shipment'
+    case 'running_cost':
     case 'running_shipment':
-      return 'e.g., Port clearance & demurrage fees'
+      return 'e.g., Demurrage fee, client sourcing logistics & travel, dispatch fuel, offloading charges'
     case 'salary':
       return 'e.g., Monthly salary payment for agent'
     default:
@@ -1179,17 +1247,27 @@ const submitExpense = () => {
 }
 
 const confirmDelete = (expense) => {
-  if (confirm(`Are you sure you want to delete expense ${expense.expense_number} (${formatNaira(expense.amount)})?`)) {
-    router.delete(`/finance/expenses/${expense.id}`, {
-      preserveScroll: true,
-      onSuccess: () => {
-        toast.success('Expense record deleted successfully')
-      },
-      onError: () => {
-        toast.error('Failed to delete expense record')
-      },
-    })
-  }
+  expenseToDelete.value = expense
+  showDeleteModal.value = true
+}
+
+const executeDelete = () => {
+  if (!expenseToDelete.value) return
+  isDeleting.value = true
+  router.delete(`/finance/expenses/${expenseToDelete.value.id}`, {
+    preserveScroll: true,
+    onSuccess: () => {
+      showDeleteModal.value = false
+      expenseToDelete.value = null
+      toast.success('Expense record deleted successfully')
+    },
+    onError: () => {
+      toast.error('Failed to delete expense record')
+    },
+    onFinish: () => {
+      isDeleting.value = false
+    },
+  })
 }
 
 const previewReceipt = (url) => {

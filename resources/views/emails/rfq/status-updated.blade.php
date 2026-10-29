@@ -90,6 +90,10 @@
         .status-completed .status-dot       { background: #22c55e; }
         .status-not_found       { background: #fef2f2; color: #991b1b; border: 1.5px solid #fecaca; }
         .status-not_found .status-dot       { background: #ef4444; }
+        .status-ghosted         { background: #f8fafc; color: #475569; border: 1.5px solid #cbd5e1; }
+        .status-ghosted .status-dot         { background: #64748b; }
+        .status-no_responses    { background: #fff1f2; color: #9f1239; border: 1.5px solid #fecdd3; }
+        .status-no_responses .status-dot    { background: #e11d48; }
         /* CONTENT */
         .content {
             padding: 36px 40px;
@@ -279,6 +283,8 @@
                 \App\Enums\RfqStatusEnum::SHIPPED          => 'Shipped',
                 \App\Enums\RfqStatusEnum::COMPLETED        => 'Completed',
                 \App\Enums\RfqStatusEnum::NOT_FOUND        => 'Not Found',
+                \App\Enums\RfqStatusEnum::GHOSTED          => 'Ghosted',
+                \App\Enums\RfqStatusEnum::NO_RESPONSES     => 'No Responses',
                 default                                    => ucfirst($newStatus->value),
             };
             $statusMessage = match($newStatus) {
@@ -290,6 +296,8 @@
                 \App\Enums\RfqStatusEnum::SHIPPED          => 'Exciting news! Your order is on its way. Our logistics team is handling the shipping process and you will receive further tracking details soon.',
                 \App\Enums\RfqStatusEnum::COMPLETED        => 'Your order has been successfully completed! Thank you for trusting Elbildad Services. We look forward to serving you again.',
                 \App\Enums\RfqStatusEnum::NOT_FOUND        => 'Unfortunately, we were unable to source the exact items you requested at this time. Please contact our team to discuss alternative options.',
+                \App\Enums\RfqStatusEnum::GHOSTED          => 'We have attempted to reach you regarding your RFQ. Since we have not received communication, the request has been marked as inactive. Please reach out if you would like to proceed.',
+                \App\Enums\RfqStatusEnum::NO_RESPONSES     => 'We have contacted potential suppliers regarding your request, but have not received viable responses at this time. Our team is exploring alternative avenues.',
                 default                                    => 'Your RFQ status has been updated. Please log in to your dashboard for more details.',
             };
         @endphp

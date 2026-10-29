@@ -31,6 +31,8 @@ class RfqStatusUpdatedMail extends Mailable implements ShouldQueue
             RfqStatusEnum::SHIPPED          => "Your Order Has Been Shipped — Elbildad Services",
             RfqStatusEnum::COMPLETED        => "Order Completed — Thank You! | Elbildad Services",
             RfqStatusEnum::NOT_FOUND        => "Update on Your RFQ — Elbildad Services",
+            RfqStatusEnum::GHOSTED          => "Status Update on Your RFQ — Elbildad Services",
+            RfqStatusEnum::NO_RESPONSES     => "Update Regarding Your RFQ — Elbildad Services",
             default                         => "Your RFQ Status Has Been Updated — Elbildad Services",
         };
 

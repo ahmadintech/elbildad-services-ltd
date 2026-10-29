@@ -69,6 +69,8 @@
                     rfq.status === 'purchased' ? 'bg-indigo-100 text-indigo-700' :
                     rfq.status === 'shipped' ? 'bg-orange-100 text-orange-700' :
                     rfq.status === 'not_found' ? 'bg-red-100 text-red-700' :
+                    rfq.status === 'ghosted' ? 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' :
+                    rfq.status === 'no_responses' ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300' :
                     rfq.status === 'quoted' ? 'bg-sky-100 text-sky-700' :
                     rfq.status === 'awaiting_payment' ? 'bg-amber-100 text-amber-700' :
                     rfq.status === 'payment_received' ? 'bg-emerald-100 text-emerald-700' :
@@ -225,6 +227,8 @@
                 <option value="pending">Pending</option>
                 <option value="sourcing">Sourcing (Looking for suppliers)</option>
                 <option value="not_found">Not Found (Item unavailable)</option>
+                <option value="ghosted">Ghosted (Unresponsive counterparty)</option>
+                <option value="no_responses">No Responses (Suppliers unresponsive)</option>
                 <option value="purchased">Purchased</option>
                 <option value="shipped">Shipped</option>
                 <option value="quoted">Quoted</option>

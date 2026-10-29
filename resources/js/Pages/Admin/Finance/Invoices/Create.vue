@@ -8,21 +8,25 @@
         </Link>
         <div>
           <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90">Create Invoice</h2>
-          <p class="text-sm text-gray-500 dark:text-gray-400">Generate a new manual invoice and sync with Zoho Invoice.</p>
+          <p class="text-sm text-gray-500 dark:text-gray-400">Generate a customer invoice, include sourcing &amp; supplier intelligence, and sync with Zoho.</p>
         </div>
       </div>
 
       <form @submit.prevent="submit" class="space-y-6">
-        <div class="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03] space-y-6">
+        <!-- 1. Customer & Dates Card -->
+        <div class="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03] space-y-6 shadow-xs">
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <!-- Customer -->
             <div class="md:col-span-1">
-              <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Customer</label>
+              <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                Customer <span class="text-error-500">*</span>
+              </label>
               <CustomerSelect
                 id="invoice-customer-select"
                 v-model="form.customer_id"
                 :customers="customers"
                 placeholder="Search & select customer…"
+                @update:modelValue="onCustomerChange"
               />
               <p v-if="form.errors.customer_id" class="mt-1 text-xs text-error-500">{{ form.errors.customer_id }}</p>
             </div>
@@ -44,14 +48,164 @@
 
           <!-- Notes -->
           <div>
-            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Notes / Terms</label>
-            <textarea v-model="form.notes" rows="3" placeholder="e.g. Terms: Net 15 days." class="dark:bg-dark-900 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-800 focus:border-brand-300 dark:border-gray-700 dark:text-white"></textarea>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Customer Terms / Notes</label>
+            <textarea v-model="form.notes" rows="2" placeholder="e.g. Terms: Net 15 days. Payment via bank transfer or Zainpay." class="dark:bg-dark-900 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-800 focus:border-brand-300 dark:border-gray-700 dark:text-white"></textarea>
             <p v-if="form.errors.notes" class="mt-1 text-xs text-error-500">{{ form.errors.notes }}</p>
           </div>
         </div>
 
-        <!-- Line Items -->
-        <div class="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03] space-y-4">
+        <!-- 2. Sourcing & Supplier Intelligence (New Dedicated Card) -->
+        <div class="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03] space-y-5 shadow-xs">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-4 border-b border-gray-100 dark:border-gray-800 gap-2">
+            <div class="flex items-center gap-2.5">
+              <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-base font-semibold text-gray-800 dark:text-white/90">Sourcing &amp; Supplier Details</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Associate with client's sourcing RFQ and record Chinese factory / supplier information.</p>
+              </div>
+            </div>
+            <span class="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-500/10 dark:text-blue-400 self-start sm:self-auto">
+              Agent Sourcing
+            </span>
+          </div>
+
+          <!-- RFQ Selection & AI Supplier Quick-Fill -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <!-- Linked RFQ -->
+            <div>
+              <label class="mb-1.5 block text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                Linked Sourcing RFQ (Optional)
+              </label>
+              <select
+                v-model="form.rfq_id"
+                @change="onRfqSelect"
+                class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:border-brand-300 dark:border-gray-700 dark:text-white"
+              >
+                <option value="">— No Linked RFQ (Independent Invoice) —</option>
+                <option v-for="rfq in filteredRfqs" :key="rfq.id" :value="rfq.id">
+                  {{ rfq.product_name }} ({{ rfq.tracking_token ? rfq.tracking_token.substring(0, 8) : rfq.id.substring(0, 8) }}) — {{ formatStatusLabel(rfq.status) }}
+                </option>
+              </select>
+              <p v-if="selectedRfq" class="mt-1.5 text-xs text-brand-600 dark:text-brand-400 flex items-center gap-1">
+                <span>✓ Linked to RFQ: <strong>{{ selectedRfq.product_name }}</strong></span>
+              </p>
+            </div>
+
+            <!-- Sourcing Company Directory Pick -->
+            <div>
+              <label class="mb-1.5 block text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                Registered Sourcing Partner (Directory)
+              </label>
+              <select
+                v-model="form.sourcing_company_id"
+                @change="onSourcingCompanySelect"
+                class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:border-brand-300 dark:border-gray-700 dark:text-white"
+              >
+                <option value="">— Custom / Direct Chinese Supplier —</option>
+                <option v-for="company in sourcingCompanies" :key="company.id" :value="company.id">
+                  {{ company.name }} {{ company.location ? `(${company.location})` : '' }}
+                </option>
+              </select>
+              <p class="mt-1.5 text-xs text-gray-400">
+                Select an established sourcing partner or enter direct factory details below.
+              </p>
+            </div>
+          </div>
+
+          <!-- Quick-Fill Pills from RFQ AI Suppliers if available -->
+          <div v-if="suggestedSuppliers.length > 0" class="rounded-xl border border-brand-100 bg-brand-50/40 p-3.5 dark:border-brand-900/30 dark:bg-brand-500/5 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-brand-800 dark:text-brand-300 flex items-center gap-1.5">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                Suggested Suppliers from RFQ:
+              </span>
+              <span class="text-[11px] text-brand-600 dark:text-brand-400">Click to pre-fill</span>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button
+                v-for="(sup, sIdx) in suggestedSuppliers"
+                :key="sIdx"
+                type="button"
+                @click="applySupplierSuggestion(sup)"
+                class="inline-flex items-center gap-1.5 rounded-lg border border-brand-200 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-800 shadow-xs hover:border-brand-400 hover:bg-brand-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-brand-900/30 transition-all"
+              >
+                <span class="font-bold text-brand-600 dark:text-brand-400">#{{ sIdx + 1 }}</span>
+                <span>{{ sup.company_name || sup.name }}</span>
+                <span v-if="sup.location" class="text-gray-400 text-[10px]">({{ sup.location }})</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Direct Supplier Information Inputs -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 pt-2">
+            <!-- Supplier / Vendor Name -->
+            <div class="sm:col-span-1 md:col-span-1">
+              <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Supplier / Factory Name</label>
+              <input
+                v-model="form.supplier_name"
+                type="text"
+                placeholder="e.g. Guangzhou Shengfeng Electronic Co."
+                class="dark:bg-dark-900 h-10 w-full rounded-lg border border-gray-300 px-3 py-1.5 text-xs text-gray-800 focus:border-brand-300 dark:border-gray-700 dark:text-white"
+              />
+              <p v-if="form.errors.supplier_name" class="mt-1 text-xs text-error-500">{{ form.errors.supplier_name }}</p>
+            </div>
+
+            <!-- Supplier Contact Details -->
+            <div class="sm:col-span-1 md:col-span-1">
+              <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Supplier Contact / WeChat / Phone</label>
+              <input
+                v-model="form.supplier_contact"
+                type="text"
+                placeholder="e.g. WeChat: wx_supplier | +86 138 0000"
+                class="dark:bg-dark-900 h-10 w-full rounded-lg border border-gray-300 px-3 py-1.5 text-xs text-gray-800 focus:border-brand-300 dark:border-gray-700 dark:text-white"
+              />
+              <p v-if="form.errors.supplier_contact" class="mt-1 text-xs text-error-500">{{ form.errors.supplier_contact }}</p>
+            </div>
+
+            <!-- Location / City -->
+            <div class="sm:col-span-2 md:col-span-1">
+              <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Location / City</label>
+              <input
+                v-model="form.supplier_location"
+                type="text"
+                placeholder="e.g. Guangzhou, Yiwu, Shenzhen"
+                class="dark:bg-dark-900 h-10 w-full rounded-lg border border-gray-300 px-3 py-1.5 text-xs text-gray-800 focus:border-brand-300 dark:border-gray-700 dark:text-white"
+              />
+              <p v-if="form.errors.supplier_location" class="mt-1 text-xs text-error-500">{{ form.errors.supplier_location }}</p>
+            </div>
+
+            <!-- Supplier / Catalog URL -->
+            <div class="sm:col-span-2 md:col-span-3">
+              <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Supplier Link / 1688 / Alibaba Product URL</label>
+              <input
+                v-model="form.supplier_url"
+                type="url"
+                placeholder="https://detail.1688.com/offer/... or https://alibaba.com/..."
+                class="dark:bg-dark-900 h-10 w-full rounded-lg border border-gray-300 px-3 py-1.5 text-xs text-gray-800 focus:border-brand-300 dark:border-gray-700 dark:text-white"
+              />
+              <p v-if="form.errors.supplier_url" class="mt-1 text-xs text-error-500">{{ form.errors.supplier_url }}</p>
+            </div>
+
+            <!-- Sourcing Notes -->
+            <div class="sm:col-span-2 md:col-span-3">
+              <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Sourcing Notes &amp; Quotation Specs</label>
+              <textarea
+                v-model="form.sourcing_notes"
+                rows="2"
+                placeholder="e.g. Factory price RMB 48/unit. MOQ 300 pcs. Lead time 7 days. Verified manufacturer on 1688."
+                class="dark:bg-dark-900 w-full rounded-lg border border-gray-300 px-3 py-2 text-xs text-gray-800 focus:border-brand-300 dark:border-gray-700 dark:text-white"
+              ></textarea>
+              <p v-if="form.errors.sourcing_notes" class="mt-1 text-xs text-error-500">{{ form.errors.sourcing_notes }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Line Items -->
+        <div class="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03] space-y-4 shadow-xs">
           <div class="flex items-center justify-between border-b border-gray-100 pb-4 dark:border-gray-800">
             <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Line Items</h3>
             <div class="flex items-center gap-2">
@@ -102,7 +256,7 @@
                   <input v-model="item.quantity" type="number" min="1" class="dark:bg-dark-900 h-10 w-full rounded-lg border border-gray-300 px-3 py-1.5 text-xs text-gray-800 focus:border-brand-300 dark:border-gray-700 dark:text-white" required />
                 </div>
                 <!-- Total -->
-                <div class="col-span-4 sm:col-span-4 text-right">
+                <div class="col-span-4 sm:col-span-2 text-right">
                   <p class="text-xs text-gray-400 mb-1">Total</p>
                   <p class="font-semibold text-sm text-gray-800 dark:text-white whitespace-nowrap">{{ formatCurrency(item.rate * item.quantity) }}</p>
                 </div>
@@ -170,18 +324,42 @@
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import CustomerSelect from '@/components/ui/CustomerSelect.vue'
 import { Head, Link, useForm } from '@inertiajs/vue3'
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useCurrency } from '@/composables/useCurrency'
 const { formatCurrency } = useCurrency()
 
 const props = defineProps({
-  customers: Array,
-  items: Array,
-  taxes: Array
+  customers: {
+    type: Array,
+    default: () => []
+  },
+  items: {
+    type: Array,
+    default: () => []
+  },
+  taxes: {
+    type: Array,
+    default: () => []
+  },
+  rfqs: {
+    type: Array,
+    default: () => []
+  },
+  sourcingCompanies: {
+    type: Array,
+    default: () => []
+  }
 })
 
 const form = useForm({
   customer_id: '',
+  rfq_id: '',
+  sourcing_company_id: '',
+  supplier_name: '',
+  supplier_contact: '',
+  supplier_location: '',
+  supplier_url: '',
+  sourcing_notes: '',
   date: new Date().toISOString().split('T')[0],
   due_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
   notes: '',
@@ -192,6 +370,94 @@ const form = useForm({
   ]
 })
 
+// Filtered RFQs based on selected customer, or all available if none selected
+const filteredRfqs = computed(() => {
+  if (!props.rfqs) return []
+  if (!form.customer_id) return props.rfqs
+  return props.rfqs.filter(r => r.customer_id === form.customer_id)
+})
+
+// Current selected RFQ object
+const selectedRfq = computed(() => {
+  if (!form.rfq_id || !props.rfqs) return null
+  return props.rfqs.find(r => r.id === form.rfq_id) || null
+})
+
+// Suggested suppliers extracted from selected RFQ (AI suppliers / best supplier)
+const suggestedSuppliers = computed(() => {
+  if (!selectedRfq.value) return []
+  const list = []
+  if (selectedRfq.value.best_supplier && typeof selectedRfq.value.best_supplier === 'object') {
+    list.push({
+      ...selectedRfq.value.best_supplier,
+      is_best: true
+    })
+  }
+  if (Array.isArray(selectedRfq.value.ai_suppliers)) {
+    selectedRfq.value.ai_suppliers.forEach(s => {
+      if (!list.some(existing => (existing.company_name || existing.name) === (s.company_name || s.name))) {
+        list.push(s)
+      }
+    })
+  }
+  return list
+})
+
+const formatStatusLabel = (status) => {
+  if (!status) return ''
+  return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+}
+
+// When customer changes, if current RFQ does not belong to customer, reset RFQ
+const onCustomerChange = (newCustomerId) => {
+  if (form.rfq_id && selectedRfq.value && selectedRfq.value.customer_id !== newCustomerId) {
+    form.rfq_id = ''
+  }
+}
+
+// When RFQ is selected
+const onRfqSelect = () => {
+  if (!selectedRfq.value) return
+  // Auto-fill customer if empty
+  if (!form.customer_id && selectedRfq.value.customer_id) {
+    form.customer_id = selectedRfq.value.customer_id
+  }
+  // If first line item is blank, suggest RFQ product name
+  if (form.line_items.length === 1 && !form.line_items[0].name) {
+    form.line_items[0].name = selectedRfq.value.product_name
+    form.line_items[0].description = selectedRfq.value.specifications || ''
+  }
+}
+
+// Quick apply supplier suggestion from RFQ
+const applySupplierSuggestion = (sup) => {
+  form.supplier_name = sup.company_name || sup.name || ''
+  form.supplier_location = sup.location || 'China'
+  if (sup.contact_hint) {
+    form.supplier_contact = sup.contact_hint
+  }
+  if (sup.why_recommended || sup.specialization) {
+    form.sourcing_notes = [
+      sup.specialization ? `Specialization: ${sup.specialization}` : '',
+      sup.estimated_moq ? `Estimated MOQ: ${sup.estimated_moq}` : '',
+      sup.why_recommended ? `Notes: ${sup.why_recommended}` : '',
+    ].filter(Boolean).join(' | ')
+  }
+}
+
+// When Sourcing Company is selected from dropdown
+const onSourcingCompanySelect = () => {
+  if (!form.sourcing_company_id) return
+  const company = (props.sourcingCompanies || []).find(c => c.id === form.sourcing_company_id)
+  if (company) {
+    form.supplier_name = company.name
+    form.supplier_location = company.location || ''
+    form.supplier_contact = [company.phone, company.email].filter(Boolean).join(' | ')
+    if (company.website) {
+      form.supplier_url = company.website
+    }
+  }
+}
 
 const addLineItem = () => {
   form.line_items.push({ name: '', description: '', rate: 0.00, quantity: 1, zoho_item_id: null })
@@ -237,6 +503,23 @@ const taxAmount = computed(() => {
 
 const overallTotal = computed(() => {
   return subTotal.value + taxAmount.value + parseFloat(form.shipping_charge || 0);
+})
+
+onMounted(() => {
+  // Check URL query parameters (e.g. ?rfq_id=... or ?customer_id=...)
+  if (typeof window !== 'undefined') {
+    const params = new URLSearchParams(window.location.search)
+    const urlRfqId = params.get('rfq_id')
+    const urlCustomerId = params.get('customer_id')
+
+    if (urlCustomerId) {
+      form.customer_id = urlCustomerId
+    }
+    if (urlRfqId) {
+      form.rfq_id = urlRfqId
+      onRfqSelect()
+    }
+  }
 })
 
 const submit = () => {

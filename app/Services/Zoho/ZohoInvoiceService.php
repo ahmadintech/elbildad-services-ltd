@@ -228,17 +228,23 @@ class ZohoInvoiceService
         }
 
         $localInvoice = Invoice::create([
-            'rfq_id' => null,
-            'estimate_id' => null,
-            'customer_id' => $customer->id,
-            'zoho_invoice_id' => $zohoInvoiceId,
-            'invoice_number' => $response['invoice']['invoice_number'] ?? ('INV-' . rand(1000, 9999)),
-            'status' => InvoiceStatusEnum::DRAFT,
-            'total' => $total,
-            'balance_due' => $total,
-            'currency' => 'USD',
-            'due_date' => $payload['due_date'],
-            'issued_at' => now(),
+            'rfq_id'              => $options['rfq_id'] ?? null,
+            'estimate_id'         => null,
+            'customer_id'         => $customer->id,
+            'sourcing_company_id' => $options['sourcing_company_id'] ?? null,
+            'supplier_name'       => $options['supplier_name'] ?? null,
+            'supplier_contact'    => $options['supplier_contact'] ?? null,
+            'supplier_location'   => $options['supplier_location'] ?? null,
+            'supplier_url'        => $options['supplier_url'] ?? null,
+            'sourcing_notes'      => $options['sourcing_notes'] ?? null,
+            'zoho_invoice_id'     => $zohoInvoiceId,
+            'invoice_number'      => $response['invoice']['invoice_number'] ?? ('INV-' . rand(1000, 9999)),
+            'status'              => InvoiceStatusEnum::DRAFT,
+            'total'               => $total,
+            'balance_due'         => $total,
+            'currency'            => 'USD',
+            'due_date'            => $payload['due_date'],
+            'issued_at'           => now(),
         ]);
 
         return array_merge($response['invoice'], ['local_id' => $localInvoice->id]);
@@ -324,7 +330,7 @@ class ZohoInvoiceService
             'status' => $newStatus,
         ]);
 
-        $enumValue = match (strtolower($paymentMode)) {
+        $enumValue = match (strtolower(str_replace('_', ' ', $paymentMode))) {
             'cash' => \App\Enums\PaymentModeEnum::CASH,
             'bank remittance', 'bank transfer' => \App\Enums\PaymentModeEnum::BANK_TRANSFER,
             'credit card', 'card' => \App\Enums\PaymentModeEnum::CARD,

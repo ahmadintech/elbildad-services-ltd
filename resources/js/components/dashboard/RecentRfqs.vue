@@ -74,6 +74,8 @@ const getStatusClass = (status) => {
     completed: 'bg-green-50 text-green-700 dark:bg-green-500/15 dark:text-green-400',
     queued: 'bg-orange-50 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400',
     not_found: 'bg-red-50 text-red-700 dark:bg-red-500/15 dark:text-red-400',
+    ghosted: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+    no_responses: 'bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-400',
   }
   return statusClasses[status] || 'bg-gray-50 text-gray-700 dark:bg-gray-500/15 dark:text-gray-400'
 }

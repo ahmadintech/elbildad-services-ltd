@@ -37,6 +37,11 @@ class Invoice extends AbstractModel
         return $this->belongsTo(User::class, 'customer_id');
     }
 
+    public function sourcingCompany(): BelongsTo
+    {
+        return $this->belongsTo(SourcingCompany::class);
+    }
+
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);

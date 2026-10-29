@@ -22,7 +22,7 @@ class DashboardController extends Controller
     {
         $user = $request->user();
 
-        if ($user->hasRole('admin') || $user->hasRole('owner')) {
+        if ($user->hasRole(['admin', 'owner', 'super_admin'])) {
             return $this->adminDashboard($user);
         }
 
@@ -34,9 +34,20 @@ class DashboardController extends Controller
             return $this->visaAgentDashboard($user);
         }
 
-        // For now, keep others as Blade or update them later
-        if ($user->hasRole('super_agent') || $user->hasRole('agent')) {
+        // Agents
+        if ($user->hasRole(['super_agent', 'agent'])) {
             return $this->agentDashboard($user);
+        }
+
+        // Accountant, Finance, or staff with operational/finance permissions
+        if (
+            $user->hasRole(['accountant', 'finance']) ||
+            $user->can('view_dashboard') ||
+            $user->can('view_invoices') ||
+            $user->can('view_expenses') ||
+            $user->can('view_reports')
+        ) {
+            return $this->adminDashboard($user);
         }
 
         return $this->customerDashboard($user);

@@ -29,7 +29,7 @@ class InvoiceController extends Controller
     public function index()
     {
         $authUser = auth()->user();
-        $query = Invoice::with(['rfq', 'estimate', 'customer'])->orderBy('created_at', 'desc');
+        $query = Invoice::with(['rfq', 'estimate', 'customer', 'sourcingCompany'])->orderBy('created_at', 'desc');
 
         if ($authUser->hasRole(['agent', 'super_agent'])) {
             $customerIds = \App\Models\Rfq::where('assigned_agent_id', $authUser->id)
@@ -95,6 +95,10 @@ class InvoiceController extends Controller
             $customers = User::whereIn('id', $customerIds)
                 ->orderBy('name')
                 ->get(['id', 'name', 'email']);
+
+            $rfqs = \App\Models\Rfq::where('assigned_agent_id', $authUser->id)
+                ->latest()
+                ->get(['id', 'product_name', 'customer_id', 'tracking_token', 'status', 'best_supplier', 'ai_suppliers', 'specifications']);
         } else {
             // Admins/owners see all customers
             $customers = User::where(function ($query) {
@@ -102,42 +106,63 @@ class InvoiceController extends Controller
                 })
                 ->orderBy('name')
                 ->get(['id', 'name', 'email']);
+
+            $rfqs = \App\Models\Rfq::latest()
+                ->take(150)
+                ->get(['id', 'product_name', 'customer_id', 'tracking_token', 'status', 'best_supplier', 'ai_suppliers', 'specifications']);
         }
 
         $items = Item::orderBy('name')->get();
         $taxes = $this->taxService->listTaxes();
+        $sourcingCompanies = \App\Models\SourcingCompany::orderBy('name')->get();
 
         return Inertia::render('Admin/Finance/Invoices/Create', [
             'customers' => $customers,
             'items' => $items,
             'taxes' => $taxes,
+            'rfqs' => $rfqs,
+            'sourcingCompanies' => $sourcingCompanies,
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'customer_id' => 'required|exists:users,id',
-            'date' => 'required|date',
-            'due_date' => 'required|date',
-            'notes' => 'nullable|string',
-            'line_items' => 'required|array|min:1',
-            'line_items.*.name' => 'required|string',
-            'line_items.*.rate' => 'required|numeric|min:0',
+            'customer_id'         => 'required|exists:users,id',
+            'rfq_id'              => 'nullable|exists:rfqs,id',
+            'sourcing_company_id' => 'nullable|exists:sourcing_companies,id',
+            'supplier_name'       => 'nullable|string|max:255',
+            'supplier_contact'    => 'nullable|string|max:255',
+            'supplier_location'   => 'nullable|string|max:255',
+            'supplier_url'        => 'nullable|string|max:1000',
+            'sourcing_notes'      => 'nullable|string|max:3000',
+            'date'                => 'required|date',
+            'due_date'            => 'required|date',
+            'notes'               => 'nullable|string',
+            'line_items'          => 'required|array|min:1',
+            'line_items.*.name'   => 'required|string',
+            'line_items.*.rate'   => 'required|numeric|min:0',
             'line_items.*.quantity' => 'required|numeric|min:1',
             'line_items.*.description' => 'nullable|string',
             'line_items.*.zoho_item_id' => 'nullable|string',
             'line_items.*.tax_id' => 'nullable|string',
-            'shipping_charge' => 'nullable|numeric|min:0',
+            'shipping_charge'     => 'nullable|numeric|min:0',
         ]);
 
         $customer = User::findOrFail($validated['customer_id']);
 
         $this->invoiceService->createManualInvoice($customer, $validated['line_items'], [
-            'date' => $validated['date'],
-            'due_date' => $validated['due_date'],
-            'notes' => $validated['notes'] ?? '',
-            'shipping_charge' => $validated['shipping_charge'] ?? 0,
+            'rfq_id'              => $validated['rfq_id'] ?? null,
+            'sourcing_company_id' => $validated['sourcing_company_id'] ?? null,
+            'supplier_name'       => $validated['supplier_name'] ?? null,
+            'supplier_contact'    => $validated['supplier_contact'] ?? null,
+            'supplier_location'   => $validated['supplier_location'] ?? null,
+            'supplier_url'        => $validated['supplier_url'] ?? null,
+            'sourcing_notes'      => $validated['sourcing_notes'] ?? null,
+            'date'                => $validated['date'],
+            'due_date'            => $validated['due_date'],
+            'notes'               => $validated['notes'] ?? '',
+            'shipping_charge'     => $validated['shipping_charge'] ?? 0,
         ]);
 
         return Redirect::route('finance.invoices.index')->with('success', 'Invoice created successfully.');
@@ -146,7 +171,9 @@ class InvoiceController extends Controller
     private function authorizeInvoiceAccess(Invoice $invoice): void
     {
         $user = auth()->user();
-        if ($user->hasRole(['owner', 'admin'])) return;
+        if ($user->hasRole(['owner', 'admin', 'super_admin', 'accountant', 'finance']) || $user->can('view_invoices')) {
+            return;
+        }
 
         if ($user->hasRole(['agent', 'super_agent'])) {
             $authorized = false;
@@ -169,7 +196,7 @@ class InvoiceController extends Controller
     public function show(Invoice $invoice)
     {
         $this->authorizeInvoiceAccess($invoice);
-        $invoice->load(['rfq', 'estimate', 'customer', 'payments']);
+        $invoice->load(['rfq', 'estimate', 'customer', 'sourcingCompany', 'payments']);
         try {
             $zohoData = $this->invoiceService->getInvoice($invoice->zoho_invoice_id);
         } catch (\Exception $e) {

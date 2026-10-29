@@ -31,6 +31,11 @@ class AppServiceProvider extends ServiceProvider
             URL::forceScheme('https');
         }
 
+        // Implicitly grant "admin", "owner", "super_admin" roles all permission checks using Gate
+        \Illuminate\Support\Facades\Gate::before(function ($user, $ability) {
+            return $user->hasRole(['admin', 'owner', 'super_admin']) ? true : null;
+        });
+
         // Register Zoho Sync Observers
         User::observe(UserObserver::class);
         Item::observe(ItemObserver::class);

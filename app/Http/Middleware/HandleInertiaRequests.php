@@ -30,8 +30,11 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $notifications = [];
-        if ($request->user()) {
-            if ($request->user()->hasRole(['admin', 'owner'])) {
+        $user = $request->user();
+        $permissions = $user ? $user->getAllPermissions()->pluck('name')->toArray() : [];
+
+        if ($user) {
+            if ($user->hasRole(['admin', 'owner', 'super_admin'])) {
                 $notifications = \Illuminate\Notifications\DatabaseNotification::latest()->limit(5)->get()->map(function ($n) {
                     return [
                         'id' => $n->id,
@@ -42,7 +45,7 @@ class HandleInertiaRequests extends Middleware
                     ];
                 });
             } else {
-                $notifications = $request->user()->unreadNotifications()->limit(5)->get()->map(function ($n) {
+                $notifications = $user->unreadNotifications()->limit(5)->get()->map(function ($n) {
                     return [
                         'id' => $n->id,
                         'type' => $n->data['type'] ?? 'Notification',
@@ -57,10 +60,14 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user() ? array_merge(
-                    $request->user()->toArray(),
-                    ['roles' => $request->user()->getRoleNames()->toArray()]
+                'user' => $user ? array_merge(
+                    $user->toArray(),
+                    [
+                        'roles' => $user->getRoleNames()->toArray(),
+                        'permissions' => $permissions,
+                    ]
                 ) : null,
+                'permissions' => $permissions,
                 'notifications' => $notifications,
             ],
             'flash' => [

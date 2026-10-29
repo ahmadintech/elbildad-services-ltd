@@ -110,7 +110,53 @@
               <p><span class="font-medium text-gray-400">Date Issued:</span> {{ formatDate(zoho.date || invoice.issued_at) }}</p>
               <p><span class="font-medium text-gray-400">Due Date:</span> {{ formatDate(zoho.due_date || invoice.due_date) }}</p>
               <p v-if="invoice.estimate"><span class="font-medium text-gray-400">Linked Quote:</span> #{{ invoice.estimate.zoho_estimate_id }}</p>
-              <p v-if="invoice.rfq"><span class="font-medium text-gray-400">Related RFQ:</span> #{{ invoice.rfq.product_name }}</p>
+              <p v-if="invoice.rfq">
+                <span class="font-medium text-gray-400">Related RFQ:</span>
+                <Link :href="`/admin/rfqs/${invoice.rfq.id}`" class="text-brand-600 hover:text-brand-700 dark:text-brand-400 hover:underline font-medium ml-1">
+                  #{{ invoice.rfq.product_name }}
+                </Link>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sourcing & Supplier Information Section -->
+        <div v-if="invoice.supplier_name || invoice.sourcing_company || invoice.supplier_contact || invoice.supplier_location || invoice.sourcing_notes" class="rounded-xl border border-gray-100 bg-gray-50/60 p-5 dark:border-gray-800 dark:bg-white/[0.02] space-y-3">
+          <div class="flex items-center justify-between border-b border-gray-200/60 pb-3 dark:border-gray-800">
+            <div class="flex items-center gap-2">
+              <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+              </span>
+              <h4 class="text-sm font-semibold text-gray-800 dark:text-white">Sourcing &amp; Supplier Intelligence</h4>
+            </div>
+            <span v-if="invoice.sourcing_company" class="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-500/10 dark:text-blue-400">
+              {{ invoice.sourcing_company.name }}
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-xs">
+            <div v-if="invoice.supplier_name">
+              <span class="block text-gray-400 font-medium">Supplier / Factory:</span>
+              <span class="font-semibold text-gray-800 dark:text-gray-200 text-sm">{{ invoice.supplier_name }}</span>
+            </div>
+            <div v-if="invoice.supplier_location">
+              <span class="block text-gray-400 font-medium">Location:</span>
+              <span class="text-gray-700 dark:text-gray-300 font-medium">{{ invoice.supplier_location }}</span>
+            </div>
+            <div v-if="invoice.supplier_contact">
+              <span class="block text-gray-400 font-medium">Contact Details:</span>
+              <span class="text-gray-700 dark:text-gray-300 font-medium">{{ invoice.supplier_contact }}</span>
+            </div>
+            <div v-if="invoice.supplier_url" class="sm:col-span-2 md:col-span-3">
+              <span class="block text-gray-400 font-medium">Catalog / Product Link:</span>
+              <a :href="invoice.supplier_url" target="_blank" rel="noopener noreferrer" class="text-brand-600 hover:text-brand-700 dark:text-brand-400 inline-flex items-center gap-1 font-medium underline break-all">
+                {{ invoice.supplier_url }}
+                <svg class="h-3 w-3 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+              </a>
+            </div>
+            <div v-if="invoice.sourcing_notes" class="sm:col-span-2 md:col-span-3">
+              <span class="block text-gray-400 font-medium">Sourcing Notes:</span>
+              <p class="text-gray-600 dark:text-gray-300 italic mt-0.5 whitespace-pre-line">{{ invoice.sourcing_notes }}</p>
             </div>
           </div>
         </div>
